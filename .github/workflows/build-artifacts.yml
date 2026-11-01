@@ -21,7 +21,7 @@ jobs:
         run: mvn -B verify
       - name: Upload backend JARs
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: queueflux-backend-jars
           path: backend/*/target/*.jar
@@ -29,7 +29,7 @@ jobs:
           retention-days: 14
       - name: Upload Maven test reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: queueflux-backend-test-reports
           path: '**/target/surefire-reports/**'
@@ -45,7 +45,7 @@ jobs:
         run: npm ci && npm run build
       - name: Upload frontend build
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: queueflux-frontend-dist
           path: web/dist/
