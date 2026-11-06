@@ -35,7 +35,7 @@ jobs:
           path: '**/target/surefire-reports/**'
           if-no-files-found: warn
           retention-days: 14
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Install frontend dependencies
