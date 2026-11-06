@@ -60,7 +60,10 @@ class ScenarioValidatorTest {
                         "unknown queue for worker pool: missing",
                         "worker outage exceeds simulation duration",
                         "unknown queue for workload: missing",
-                        "workload window exceeds simulation duration");
+                        "workload window exceeds simulation duration",
+                        "queue has no workload: emails",
+                        "queue has no workload: emails",
+                        "queue has no workload: reports");
     }
 
     @Test
