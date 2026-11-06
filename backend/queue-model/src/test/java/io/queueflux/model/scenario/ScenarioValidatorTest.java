@@ -56,8 +56,8 @@ class ScenarioValidatorTest {
         assertThat(ScenarioValidator.validateAll(scenario))
                 .containsExactly(
                         "duplicate queue id: emails",
-                        "duplicate worker pool id: workers",
                         "unknown queue for worker pool: missing",
+                        "duplicate worker pool id: workers",
                         "worker outage exceeds simulation duration",
                         "unknown queue for workload: missing",
                         "workload window exceeds simulation duration",
