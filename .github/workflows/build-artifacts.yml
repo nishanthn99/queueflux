@@ -38,11 +38,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: web/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: web
+        run: npm install --no-audit --no-fund
       - name: Build frontend
         working-directory: web
-        run: npm ci && npm run build
+        run: npm run build
       - name: Upload frontend build
         if: success()
         uses: actions/upload-artifact@v4
