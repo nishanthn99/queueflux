@@ -45,6 +45,8 @@ This removes containers and the Compose network but keeps the named database vol
 | DB_USERNAME | queueflux | Database user |
 | DB_PASSWORD | queueflux-dev | Development-only password |
 | SERVER_PORT | 8080 | API port |
+| APP_RETENTION_RUN_TTL_DAYS | 30 | Retention period for completed/failed runs; 0 disables cleanup |
+| APP_RETENTION_CLEANUP_CRON | 0 0 2 * * * | Cron schedule for retention cleanup |
 
 Change development credentials before sharing the Compose stack beyond a trusted local machine. Do not commit secrets to the repository.
 
