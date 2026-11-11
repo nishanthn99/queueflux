@@ -34,3 +34,4 @@ app:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
   retention:
     run-ttl-days: ${APP_RETENTION_RUN_TTL_DAYS:30}
+    cleanup-cron: ${APP_RETENTION_CLEANUP_CRON:0 0 2 * * *}
