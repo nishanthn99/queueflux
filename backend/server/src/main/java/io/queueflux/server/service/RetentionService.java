@@ -19,14 +19,24 @@ public class RetentionService {
         this.props = props;
     }
 
-    @Scheduled(cron = "0 0 2 * * *")
+    /**
+     * Purges terminal simulation runs older than the configured TTL.
+     * The schedule is configurable so deployments can move cleanup away from
+     * peak database activity without changing application code.
+     */
+    @Scheduled(cron = "${app.retention.cleanup-cron:0 0 2 * * *}")
     public void purgeOldRuns() {
         if (props.runTtlDays() == 0) return;
+
         int deleted = jdbc.update("""
                 DELETE FROM simulation_runs
-                WHERE completed_at < NOW() - (? || ' days')::INTERVAL
+                WHERE completed_at < NOW() - (? * INTERVAL '1 day')
                 AND status IN ('COMPLETED', 'FAILED')
-                """, String.valueOf(props.runTtlDays()));
-        if (deleted > 0) log.info("Retention: purged {} simulation run(s) older than {} days", deleted, props.runTtlDays());
+                """, props.runTtlDays());
+
+        if (deleted > 0) {
+            log.info("Retention: purged {} simulation run(s) older than {} days",
+                    deleted, props.runTtlDays());
+        }
     }
 }
