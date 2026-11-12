@@ -153,6 +153,10 @@ QueueFlux is a simulation platform. It does not connect to Redis, run BullMQ job
 
 See the roadmap for implemented features and intentionally deferred work.
 
+## Community
+
+Join the [QueueFlux Discord community](https://discord.gg/RGRM8g75T) to discuss development, ask questions, share ideas, and coordinate contributions.
+
 ## Contributing and license
 
 Read CONTRIBUTING.md before opening a pull request. QueueFlux is distributed under the Apache License 2.0 (LICENSE).
