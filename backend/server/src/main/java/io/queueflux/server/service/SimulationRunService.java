@@ -13,8 +13,10 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.http.MediaType;
@@ -27,6 +29,7 @@ public class SimulationRunService implements ApplicationRunner {
     private final SimulationRunRepository repository;
     private final TaskExecutor executor;
     private final Map<UUID, CopyOnWriteArrayList<SseEmitter>> subscribers = new ConcurrentHashMap<>();
+    private final Map<UUID, AtomicBoolean> cancellationFlags = new ConcurrentHashMap<>();
 
     public SimulationRunService(SimulationEngine engine, SimulationRunRepository repository,
             @Qualifier("simulationTaskExecutor") TaskExecutor executor) {
@@ -40,25 +43,46 @@ public class SimulationRunService implements ApplicationRunner {
     public void run(ApplicationArguments arguments) {
         for (PendingSimulationRun pending : repository.findInterrupted()) {
             repository.requeueAfterRestart(pending.id());
+            AtomicBoolean cancelled = new AtomicBoolean(false);
+            cancellationFlags.put(pending.id(), cancelled);
             try {
-                executor.execute(() -> execute(pending.id(), pending.scenario()));
+                executor.execute(() -> execute(pending.id(), pending.scenario(), cancelled));
             } catch (RuntimeException rejected) {
+                cancellationFlags.remove(pending.id());
                 repository.markFailed(pending.id(), "Restart recovery could not enqueue this run: " + rejected.getMessage());
             }
         }
     }
 
-    public UUID submit(ScenarioDefinition scenario) {
+    /** Returns (id, isNew=true) for a fresh run, or (id, isNew=false) when the idempotency key already exists. */
+    public SubmitOutcome submit(ScenarioDefinition scenario, String idempotencyKey) {
+        if (idempotencyKey != null) {
+            Optional<SimulationRunSnapshot> existing = repository.findByIdempotencyKey(idempotencyKey);
+            if (existing.isPresent()) return new SubmitOutcome(existing.get().id(), false);
+        }
         ScenarioValidator.validate(scenario);
         UUID id = UUID.randomUUID();
-        repository.create(id, scenario);
+        AtomicBoolean cancelled = new AtomicBoolean(false);
+        cancellationFlags.put(id, cancelled);
+        repository.create(id, scenario, idempotencyKey);
         try {
-            executor.execute(() -> execute(id, scenario));
+            executor.execute(() -> execute(id, scenario, cancelled));
         } catch (RuntimeException rejected) {
+            cancellationFlags.remove(id);
             repository.markFailed(id, "Simulation executor is full or shutting down: " + rejected.getMessage());
             throw new IllegalStateException("simulation executor cannot accept another run", rejected);
         }
-        return id;
+        return new SubmitOutcome(id, true);
+    }
+
+    /**
+     * Cancels a run. QUEUED runs are cancelled immediately; RUNNING runs stop at the
+     * engine's next event boundary. Returns false if the run is already in a terminal state.
+     */
+    public boolean cancel(UUID id) {
+        AtomicBoolean flag = cancellationFlags.get(id);
+        if (flag != null) flag.set(true);
+        return repository.markCancelled(id);
     }
 
     public Optional<SimulationRunSnapshot> find(UUID id) {
@@ -82,20 +106,28 @@ public class SimulationRunService implements ApplicationRunner {
         return emitter;
     }
 
-    private void execute(UUID id, ScenarioDefinition scenario) {
+    private void execute(UUID id, ScenarioDefinition scenario, AtomicBoolean cancelled) {
         try {
-            repository.markRunning(id);
+            if (!repository.markRunning(id)) return; // cancelled before executor picked it up
             publish(id, "status", Map.of("status", "RUNNING"));
-            SimulationResult result = engine.run(SimulationRequest.defaults(scenario), progress -> {
-                repository.updateProgress(id, progress);
-                publish(id, "progress", progress);
-            });
+            SimulationObserver observer = new SimulationObserver() {
+                @Override public void onProgress(SimulationProgress p) {
+                    repository.updateProgress(id, p);
+                    publish(id, "progress", p);
+                }
+                @Override public boolean isCancelled() { return cancelled.get(); }
+            };
+            SimulationResult result = engine.run(SimulationRequest.defaults(scenario), observer);
             repository.markCompleted(id, result);
             repository.find(id).ifPresent(snapshot -> publish(id, "completed", snapshot));
+        } catch (CancellationException ignored) {
+            repository.markCancelled(id);
+            repository.find(id).ifPresent(snapshot -> publish(id, "cancelled", snapshot));
         } catch (RuntimeException exception) {
             repository.markFailed(id, exception.getMessage());
             repository.find(id).ifPresent(snapshot -> publish(id, "failed", snapshot));
         } finally {
+            cancellationFlags.remove(id);
             completeListeners(id);
         }
     }
@@ -128,6 +160,8 @@ public class SimulationRunService implements ApplicationRunner {
     }
 
     private boolean isTerminal(String status) {
-        return "COMPLETED".equals(status) || "FAILED".equals(status);
+        return "COMPLETED".equals(status) || "FAILED".equals(status) || "CANCELLED".equals(status);
     }
+
+    public record SubmitOutcome(UUID id, boolean isNew) {}
 }

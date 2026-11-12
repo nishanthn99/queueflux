@@ -7,6 +7,7 @@ import io.queueflux.engine.runtime.ServiceTimeSampler;
 import io.queueflux.engine.scheduler.*;
 import io.queueflux.model.scenario.*;
 import java.util.*;
+import java.util.concurrent.CancellationException;
 
 /**
  * Deterministic multi-queue discrete-event engine. Simulation time is virtual;
@@ -142,6 +143,7 @@ public final class DefaultSimulationEngine implements SimulationEngine {
 
         int maxTrace = request.maxTraceEvents();
         while (!scheduler.isEmpty()) {
+            if (observer.isCancelled()) throw new CancellationException("simulation run was cancelled");
             ScheduledEvent event = scheduler.poll();
             if (event.timeMicros() > scenario.durationMicros()) break;
             if (++processedEvents > request.maxEvents()) throw new IllegalStateException("maximum event limit exceeded");

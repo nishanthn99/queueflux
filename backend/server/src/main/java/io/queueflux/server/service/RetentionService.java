@@ -25,7 +25,7 @@ public class RetentionService {
         int deleted = jdbc.update("""
                 DELETE FROM simulation_runs
                 WHERE completed_at < NOW() - (? || ' days')::INTERVAL
-                AND status IN ('COMPLETED', 'FAILED')
+                AND status IN ('COMPLETED', 'FAILED', 'CANCELLED')
                 """, String.valueOf(props.runTtlDays()));
         if (deleted > 0) log.info("Retention: purged {} simulation run(s) older than {} days", deleted, props.runTtlDays());
     }

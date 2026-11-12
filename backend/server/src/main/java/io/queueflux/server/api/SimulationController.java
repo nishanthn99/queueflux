@@ -33,12 +33,22 @@ public class SimulationController {
 
     /** Create a durable asynchronous run; its status and progress survive server restarts. */
     @PostMapping("/runs")
-    public ResponseEntity<RunAccepted> submit(@RequestBody ScenarioDefinition scenario) {
-        UUID id = runService.submit(scenario);
-        String statusUrl = "/api/v1/simulations/runs/" + id;
-        String eventsUrl = statusUrl + "/events";
-        return ResponseEntity.accepted().location(URI.create(statusUrl))
-                .body(new RunAccepted(id, "QUEUED", statusUrl, eventsUrl));
+    public ResponseEntity<RunAccepted> submit(
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @RequestBody ScenarioDefinition scenario) {
+        SimulationRunService.SubmitOutcome outcome = runService.submit(scenario, idempotencyKey);
+        String statusUrl = "/api/v1/simulations/runs/" + outcome.id();
+        RunAccepted body = new RunAccepted(outcome.id(), "QUEUED", statusUrl, statusUrl + "/events");
+        return outcome.isNew()
+                ? ResponseEntity.accepted().location(URI.create(statusUrl)).body(body)
+                : ResponseEntity.ok().location(URI.create(statusUrl)).body(body);
+    }
+
+    @DeleteMapping("/runs/{id}")
+    public ResponseEntity<Void> cancel(@PathVariable UUID id) {
+        if (runService.find(id).isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "simulation run not found");
+        if (!runService.cancel(id)) throw new ResponseStatusException(HttpStatus.CONFLICT, "run is already in a terminal state");
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/runs/{id}")
