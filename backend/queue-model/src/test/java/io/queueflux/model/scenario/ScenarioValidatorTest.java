@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -29,134 +30,48 @@ class ScenarioValidatorTest {
 
     @Test
     void acceptsAValidScenario() {
-        var scenario = validScenario(
-                List.of(queue("emails")),
+        var scenario = validScenario(List.of(queue("emails")),
                 List.of(pool("email-workers", "emails", List.of())),
                 List.of(workload("email-load", "emails", 1_000_000)));
-
         assertThatCode(() -> ScenarioValidator.validate(scenario)).doesNotThrowAnyException();
     }
 
     @Test
     void rejectsDuplicateQueueIds() {
-        var scenario = validScenario(
-                List.of(queue("emails"), queue("emails")),
-                List.of(pool("workers", "emails", List.of())),
-                List.of(workload("load", "emails", 1_000_000)));
-
-        assertThatThrownBy(() -> ScenarioValidator.validate(scenario))
-                .isInstanceOf(IllegalArgumentException.class)
+        var scenario = validScenario(List.of(queue("emails"), queue("emails")),
+                List.of(pool("workers", "emails", List.of())), List.of(workload("load", "emails", 1_000_000)));
+        assertThatThrownBy(() -> ScenarioValidator.validate(scenario)).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("duplicate queue id");
     }
 
     @Test
-    void rejectsDuplicateWorkerPoolIds() {
+    void validateAllReportsMultipleIndependentErrors() {
         var scenario = validScenario(
-                List.of(queue("emails")),
-                List.of(pool("workers", "emails", List.of()), pool("workers", "emails", List.of())),
-                List.of(workload("load", "emails", 1_000_000)));
+                List.of(queue("emails"), queue("emails"), queue("reports")),
+                List.of(pool("workers", "missing", List.of()),
+                        pool("workers", "emails", List.of(new WorkerOutage("maintenance", 100, 1_000_001, 1))),
+                        pool("report-workers", "reports", List.of())),
+                List.of(workload("load", "missing", 1_000_001)));
 
-        assertThatThrownBy(() -> ScenarioValidator.validate(scenario))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("duplicate worker pool id");
+        assertThat(ScenarioValidator.validateAll(scenario))
+                .containsExactly(
+                        "duplicate queue id: emails",
+                        "unknown queue for worker pool: missing",
+                        "duplicate worker pool id: workers",
+                        "worker outage exceeds simulation duration",
+                        "unknown queue for workload: missing",
+                        "workload window exceeds simulation duration",
+                        "queue has no workload: emails",
+                        "queue has no workload: emails",
+                        "queue has no workload: reports");
     }
 
     @Test
-    void rejectsWorkerPoolsThatReferenceUnknownQueues() {
-        var scenario = validScenario(
-                List.of(queue("emails")),
-                List.of(pool("workers", "missing", List.of())),
-                List.of(workload("load", "emails", 1_000_000)));
-
+    void validateStillThrowsTheFirstErrorForBackwardCompatibility() {
+        var scenario = validScenario(List.of(queue("emails"), queue("emails")),
+                List.of(pool("workers", "emails", List.of())), List.of(workload("load", "emails", 1_000_000)));
         assertThatThrownBy(() -> ScenarioValidator.validate(scenario))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("unknown queue for worker pool");
-    }
-
-    @Test
-    void rejectsWorkloadsThatReferenceUnknownQueues() {
-        var scenario = validScenario(
-                List.of(queue("emails")),
-                List.of(pool("workers", "emails", List.of())),
-                List.of(workload("load", "missing", 1_000_000)));
-
-        assertThatThrownBy(() -> ScenarioValidator.validate(scenario))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("unknown queue for workload");
-    }
-
-    @Test
-    void rejectsDuplicateWorkloadIds() {
-        var scenario = validScenario(
-                List.of(queue("emails")),
-                List.of(pool("workers", "emails", List.of())),
-                List.of(workload("load", "emails", 500_000), workload("load", "emails", 1_000_000)));
-
-        assertThatThrownBy(() -> ScenarioValidator.validate(scenario))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("duplicate workload id");
-    }
-
-    @Test
-    void rejectsDuplicateOutageIdsWithinAWorkerPool() {
-        var outages = List.of(
-                new WorkerOutage("maintenance", 100, 200, 1),
-                new WorkerOutage("maintenance", 300, 400, 1));
-        var scenario = validScenario(
-                List.of(queue("emails")),
-                List.of(pool("workers", "emails", outages)),
-                List.of(workload("load", "emails", 1_000_000)));
-
-        assertThatThrownBy(() -> ScenarioValidator.validate(scenario))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("duplicate worker outage id");
-    }
-
-    @Test
-    void rejectsOutagesThatExceedSimulationDuration() {
-        var scenario = validScenario(
-                List.of(queue("emails")),
-                List.of(pool("workers", "emails", List.of(new WorkerOutage("maintenance", 100, 1_000_001, 1)))),
-                List.of(workload("load", "emails", 1_000_000)));
-
-        assertThatThrownBy(() -> ScenarioValidator.validate(scenario))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("worker outage exceeds simulation duration");
-    }
-
-    @Test
-    void rejectsWorkloadWindowsThatExceedSimulationDuration() {
-        var scenario = validScenario(
-                List.of(queue("emails")),
-                List.of(pool("workers", "emails", List.of())),
-                List.of(workload("load", "emails", 1_000_001)));
-
-        assertThatThrownBy(() -> ScenarioValidator.validate(scenario))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("workload window exceeds simulation duration");
-    }
-
-    @Test
-    void requiresExactlyOneWorkerPoolPerQueue() {
-        var scenario = validScenario(
-                List.of(queue("emails")),
-                List.of(pool("workers-a", "emails", List.of()), pool("workers-b", "emails", List.of())),
-                List.of(workload("load", "emails", 1_000_000)));
-
-        assertThatThrownBy(() -> ScenarioValidator.validate(scenario))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("exactly one worker pool per queue");
-    }
-
-    @Test
-    void rejectsQueuesWithoutAWorkload() {
-        var scenario = validScenario(
-                List.of(queue("emails"), queue("reports")),
-                List.of(pool("email-workers", "emails", List.of()), pool("report-workers", "reports", List.of())),
-                List.of(workload("email-load", "emails", 1_000_000)));
-
-        assertThatThrownBy(() -> ScenarioValidator.validate(scenario))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("queue has no workload: reports");
+                .hasMessage("duplicate queue id: emails");
     }
 }
