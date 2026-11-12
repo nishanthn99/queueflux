@@ -25,16 +25,16 @@ public class SimulationRunRepository {
         this.mapper = mapper;
     }
 
-    public void create(UUID id, ScenarioDefinition scenario) {
+    public void create(UUID id, ScenarioDefinition scenario, String idempotencyKey) {
         jdbc.update("""
                 INSERT INTO simulation_runs
-                (id, status, scenario_name, seed, submitted_at, scenario_json, virtual_time_micros, processed_events)
-                VALUES (?, 'QUEUED', ?, ?, ?, CAST(? AS JSONB), 0, 0)
-                """, id, scenario.name(), scenario.seed(), Timestamp.from(Instant.now()), toJson(scenario));
+                (id, status, scenario_name, seed, submitted_at, scenario_json, virtual_time_micros, processed_events, idempotency_key)
+                VALUES (?, 'QUEUED', ?, ?, ?, CAST(? AS JSONB), 0, 0, ?)
+                """, id, scenario.name(), scenario.seed(), Timestamp.from(Instant.now()), toJson(scenario), idempotencyKey);
     }
 
-    public void markRunning(UUID id) {
-        jdbc.update("UPDATE simulation_runs SET status='RUNNING', error_message=NULL WHERE id=? AND status='QUEUED'", id);
+    public boolean markRunning(UUID id) {
+        return jdbc.update("UPDATE simulation_runs SET status='RUNNING', error_message=NULL WHERE id=? AND status='QUEUED'", id) > 0;
     }
 
     public void updateProgress(UUID id, SimulationProgress progress) {
@@ -74,6 +74,33 @@ public class SimulationRunRepository {
                 readJson(rs.getString("scenario_json")),
                 readJson(rs.getString("result_json")),
                 rs.getString("error_message")), id);
+        return results.stream().findFirst();
+    }
+
+    public boolean markCancelled(UUID id) {
+        return jdbc.update("""
+                UPDATE simulation_runs SET status='CANCELLED', completed_at=?
+                WHERE id=? AND status IN ('QUEUED', 'RUNNING')
+                """, Timestamp.from(Instant.now()), id) > 0;
+    }
+
+    public Optional<SimulationRunSnapshot> findByIdempotencyKey(String key) {
+        List<SimulationRunSnapshot> results = jdbc.query("""
+                SELECT id, status, scenario_name, seed, submitted_at, completed_at,
+                       virtual_time_micros, processed_events, scenario_json::text, result_json::text, error_message
+                FROM simulation_runs WHERE idempotency_key=?
+                """, (rs, row) -> new SimulationRunSnapshot(
+                rs.getObject("id", UUID.class),
+                rs.getString("status"),
+                rs.getString("scenario_name"),
+                rs.getLong("seed"),
+                rs.getTimestamp("submitted_at").toInstant(),
+                rs.getTimestamp("completed_at") == null ? null : rs.getTimestamp("completed_at").toInstant(),
+                rs.getLong("virtual_time_micros"),
+                rs.getLong("processed_events"),
+                readJson(rs.getString("scenario_json")),
+                readJson(rs.getString("result_json")),
+                rs.getString("error_message")), key);
         return results.stream().findFirst();
     }
 
