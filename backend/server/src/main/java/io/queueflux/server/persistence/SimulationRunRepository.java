@@ -25,12 +25,12 @@ public class SimulationRunRepository {
         this.mapper = mapper;
     }
 
-    public void create(UUID id, ScenarioDefinition scenario, String idempotencyKey) {
+    public void create(UUID id, ScenarioDefinition scenario, String idempotencyKey, long timeoutMillis) {
         jdbc.update("""
                 INSERT INTO simulation_runs
-                (id, status, scenario_name, seed, submitted_at, scenario_json, virtual_time_micros, processed_events, idempotency_key)
-                VALUES (?, 'QUEUED', ?, ?, ?, CAST(? AS JSONB), 0, 0, ?)
-                """, id, scenario.name(), scenario.seed(), Timestamp.from(Instant.now()), toJson(scenario), idempotencyKey);
+                (id, status, scenario_name, seed, submitted_at, scenario_json, virtual_time_micros, processed_events, idempotency_key, timeout_millis)
+                VALUES (?, 'QUEUED', ?, ?, ?, CAST(? AS JSONB), 0, 0, ?, ?)
+                """, id, scenario.name(), scenario.seed(), Timestamp.from(Instant.now()), toJson(scenario), idempotencyKey, timeoutMillis);
     }
 
     public boolean markRunning(UUID id) {
@@ -60,7 +60,8 @@ public class SimulationRunRepository {
     public Optional<SimulationRunSnapshot> find(UUID id) {
         List<SimulationRunSnapshot> results = jdbc.query("""
                 SELECT id, status, scenario_name, seed, submitted_at, completed_at,
-                       virtual_time_micros, processed_events, scenario_json::text, result_json::text, error_message
+                       virtual_time_micros, processed_events, timeout_millis,
+                       scenario_json::text, result_json::text, error_message
                 FROM simulation_runs WHERE id=?
                 """, (rs, row) -> new SimulationRunSnapshot(
                 rs.getObject("id", UUID.class),
@@ -71,6 +72,7 @@ public class SimulationRunRepository {
                 rs.getTimestamp("completed_at") == null ? null : rs.getTimestamp("completed_at").toInstant(),
                 rs.getLong("virtual_time_micros"),
                 rs.getLong("processed_events"),
+                rs.getLong("timeout_millis"),
                 readJson(rs.getString("scenario_json")),
                 readJson(rs.getString("result_json")),
                 rs.getString("error_message")), id);
@@ -87,7 +89,8 @@ public class SimulationRunRepository {
     public Optional<SimulationRunSnapshot> findByIdempotencyKey(String key) {
         List<SimulationRunSnapshot> results = jdbc.query("""
                 SELECT id, status, scenario_name, seed, submitted_at, completed_at,
-                       virtual_time_micros, processed_events, scenario_json::text, result_json::text, error_message
+                       virtual_time_micros, processed_events, timeout_millis,
+                       scenario_json::text, result_json::text, error_message
                 FROM simulation_runs WHERE idempotency_key=?
                 """, (rs, row) -> new SimulationRunSnapshot(
                 rs.getObject("id", UUID.class),
@@ -98,6 +101,7 @@ public class SimulationRunRepository {
                 rs.getTimestamp("completed_at") == null ? null : rs.getTimestamp("completed_at").toInstant(),
                 rs.getLong("virtual_time_micros"),
                 rs.getLong("processed_events"),
+                rs.getLong("timeout_millis"),
                 readJson(rs.getString("scenario_json")),
                 readJson(rs.getString("result_json")),
                 rs.getString("error_message")), key);
@@ -106,12 +110,13 @@ public class SimulationRunRepository {
 
     public List<PendingSimulationRun> findInterrupted() {
         return jdbc.query("""
-                SELECT id, scenario_json::text FROM simulation_runs
+                SELECT id, scenario_json::text, timeout_millis FROM simulation_runs
                 WHERE status IN ('QUEUED', 'RUNNING') ORDER BY submitted_at ASC
                 """, (rs, row) -> {
             try {
                 return new PendingSimulationRun(rs.getObject("id", UUID.class),
-                        mapper.readValue(rs.getString("scenario_json"), ScenarioDefinition.class));
+                        mapper.readValue(rs.getString("scenario_json"), ScenarioDefinition.class),
+                        rs.getLong("timeout_millis"));
             } catch (JacksonException exception) {
                 throw new IllegalStateException("could not read a persisted scenario for restart recovery", exception);
             }

@@ -13,6 +13,7 @@ public record SimulationRunSnapshot(
         Instant completedAt,
         long virtualTimeMicros,
         long processedEvents,
+        long timeoutMillis,
         JsonNode scenario,
         JsonNode result,
         String errorMessage) {}

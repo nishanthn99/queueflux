@@ -35,8 +35,9 @@ public class SimulationController {
     @PostMapping("/runs")
     public ResponseEntity<RunAccepted> submit(
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @RequestHeader(value = "X-Timeout-Millis", required = false, defaultValue = "0") long timeoutMillis,
             @RequestBody ScenarioDefinition scenario) {
-        SimulationRunService.SubmitOutcome outcome = runService.submit(scenario, idempotencyKey);
+        SimulationRunService.SubmitOutcome outcome = runService.submit(scenario, idempotencyKey, timeoutMillis);
         String statusUrl = "/api/v1/simulations/runs/" + outcome.id();
         RunAccepted body = new RunAccepted(outcome.id(), "QUEUED", statusUrl, statusUrl + "/events");
         return outcome.isNew()

@@ -16,6 +16,9 @@ import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.task.TaskExecutor;
@@ -28,14 +31,17 @@ public class SimulationRunService implements ApplicationRunner {
     private final SimulationEngine engine;
     private final SimulationRunRepository repository;
     private final TaskExecutor executor;
+    private final ScheduledExecutorService timeoutScheduler;
     private final Map<UUID, CopyOnWriteArrayList<SseEmitter>> subscribers = new ConcurrentHashMap<>();
     private final Map<UUID, AtomicBoolean> cancellationFlags = new ConcurrentHashMap<>();
 
     public SimulationRunService(SimulationEngine engine, SimulationRunRepository repository,
-            @Qualifier("simulationTaskExecutor") TaskExecutor executor) {
+            @Qualifier("simulationTaskExecutor") TaskExecutor executor,
+            @Qualifier("simulationTimeoutScheduler") ScheduledExecutorService timeoutScheduler) {
         this.engine = engine;
         this.repository = repository;
         this.executor = executor;
+        this.timeoutScheduler = timeoutScheduler;
     }
 
     /** Replays queued/running rows after a single-process restart from virtual time zero. */
@@ -46,7 +52,7 @@ public class SimulationRunService implements ApplicationRunner {
             AtomicBoolean cancelled = new AtomicBoolean(false);
             cancellationFlags.put(pending.id(), cancelled);
             try {
-                executor.execute(() -> execute(pending.id(), pending.scenario(), cancelled));
+                executor.execute(() -> execute(pending.id(), pending.scenario(), cancelled, pending.timeoutMillis()));
             } catch (RuntimeException rejected) {
                 cancellationFlags.remove(pending.id());
                 repository.markFailed(pending.id(), "Restart recovery could not enqueue this run: " + rejected.getMessage());
@@ -54,8 +60,12 @@ public class SimulationRunService implements ApplicationRunner {
         }
     }
 
-    /** Returns (id, isNew=true) for a fresh run, or (id, isNew=false) when the idempotency key already exists. */
-    public SubmitOutcome submit(ScenarioDefinition scenario, String idempotencyKey) {
+    /**
+     * Returns (id, isNew=true) for a fresh run, or (id, isNew=false) when the
+     * idempotency key already exists. An optional {@code timeoutMillis > 0} causes
+     * the run to be auto-cancelled after that many wall-clock milliseconds.
+     */
+    public SubmitOutcome submit(ScenarioDefinition scenario, String idempotencyKey, long timeoutMillis) {
         if (idempotencyKey != null) {
             Optional<SimulationRunSnapshot> existing = repository.findByIdempotencyKey(idempotencyKey);
             if (existing.isPresent()) return new SubmitOutcome(existing.get().id(), false);
@@ -64,9 +74,9 @@ public class SimulationRunService implements ApplicationRunner {
         UUID id = UUID.randomUUID();
         AtomicBoolean cancelled = new AtomicBoolean(false);
         cancellationFlags.put(id, cancelled);
-        repository.create(id, scenario, idempotencyKey);
+        repository.create(id, scenario, idempotencyKey, timeoutMillis);
         try {
-            executor.execute(() -> execute(id, scenario, cancelled));
+            executor.execute(() -> execute(id, scenario, cancelled, timeoutMillis));
         } catch (RuntimeException rejected) {
             cancellationFlags.remove(id);
             repository.markFailed(id, "Simulation executor is full or shutting down: " + rejected.getMessage());
@@ -106,7 +116,8 @@ public class SimulationRunService implements ApplicationRunner {
         return emitter;
     }
 
-    private void execute(UUID id, ScenarioDefinition scenario, AtomicBoolean cancelled) {
+    private void execute(UUID id, ScenarioDefinition scenario, AtomicBoolean cancelled, long timeoutMillis) {
+        ScheduledFuture<?> timeoutFuture = scheduleTimeout(id, cancelled, timeoutMillis);
         try {
             if (!repository.markRunning(id)) return; // cancelled before executor picked it up
             publish(id, "status", Map.of("status", "RUNNING"));
@@ -127,9 +138,20 @@ public class SimulationRunService implements ApplicationRunner {
             repository.markFailed(id, exception.getMessage());
             repository.find(id).ifPresent(snapshot -> publish(id, "failed", snapshot));
         } finally {
+            if (timeoutFuture != null) timeoutFuture.cancel(false);
             cancellationFlags.remove(id);
             completeListeners(id);
         }
+    }
+
+    private ScheduledFuture<?> scheduleTimeout(UUID id, AtomicBoolean cancelled, long timeoutMillis) {
+        if (timeoutMillis <= 0) return null;
+        return timeoutScheduler.schedule(() -> {
+            cancelled.set(true);
+            repository.markCancelled(id);
+            repository.find(id).ifPresent(snapshot -> publish(id, "cancelled", snapshot));
+            completeListeners(id);
+        }, timeoutMillis, TimeUnit.MILLISECONDS);
     }
 
     private void publish(UUID id, String event, Object payload) {
