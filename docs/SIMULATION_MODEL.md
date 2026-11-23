@@ -37,7 +37,7 @@ where U is a deterministic uniform sample in [0, 1). The first Poisson arrival i
 
 ## Service times and failures
 
-Constant service times return the configured duration. Exponential service times are sampled from an exponential distribution using the configured mean. Every job attempt has its own stream key. If failureProbability is greater than zero, a second independent stream determines whether that attempt fails.
+Constant service times return the configured duration. Exponential service times are sampled from an exponential distribution using the configured mean. Log-normal service times are sampled from a single uniform draw mapped through the inverse standard-normal CDF (Acklam's rational approximation); the scenario's real-space mean and standard deviation are converted to the underlying normal parameters (mu, sigma) so the sampled durations reproduce the configured mean and variance. Every job attempt has its own stream key. If failureProbability is greater than zero, a second independent stream determines whether that attempt fails.
 
 A failed attempt increments failedAttempts. If attempts remain, a retry is scheduled after a bounded exponential backoff with deterministic jitter. Otherwise the job reaches a dead-letter outcome. The model treats failures as transient processing failures; it does not simulate application exception types or retryable/non-retryable exception classifiers.
 

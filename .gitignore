@@ -5,10 +5,13 @@
 .idea/
 *.iml
 .vscode/
+**/.jqwik-database
 # Node
 node_modules/
 web/dist/
 web/.vite/
+web/coverage/
+*.tsbuildinfo
 # Runtime
 .env
 .env.*

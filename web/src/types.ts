@@ -4,7 +4,7 @@ export type WorkerOutage = { id: string; startMicros: number; endMicros: number;
 export type Scenario = {
   schemaVersion: number; name: string; durationMicros: number; seed: number;
   queues: { id: string; maxDepth: number; discipline: 'FIFO' | 'PRIORITY'; retryPolicy?: RetryPolicy; rateLimit?: RateLimitPolicy }[];
-  workerPools: { id: string; queueId: string; workerCount: number; concurrencyPerWorker: number; serviceTime: { distribution: 'CONSTANT' | 'EXPONENTIAL'; constantMicros: number; meanMicros: number }; failureProbability?: number; outages?: WorkerOutage[] }[];
+  workerPools: { id: string; queueId: string; workerCount: number; concurrencyPerWorker: number; serviceTime: { distribution: 'CONSTANT' | 'EXPONENTIAL' | 'LOGNORMAL'; constantMicros: number; meanMicros: number; stdDevMicros?: number }; failureProbability?: number; outages?: WorkerOutage[] }[];
   workloads: { id: string; queueId: string; startMicros: number; endMicros: number; priority?: number; arrivals: { mode: 'CONSTANT' | 'POISSON'; ratePerSecond: number } }[];
 };
 export type Result = {

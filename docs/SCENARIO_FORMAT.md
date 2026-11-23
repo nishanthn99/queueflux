@@ -72,6 +72,7 @@ This is a token-bucket abstraction. It is global to the simulated queue, not a p
 Service time:
 - CONSTANT: uses constantMicros.
 - EXPONENTIAL: samples an exponential duration from meanMicros.
+- LOGNORMAL: samples a right-skewed duration whose real-space mean is meanMicros and whose real-space standard deviation is stdDevMicros. Both must be > 0. The engine converts these to the underlying normal parameters, so the sampled durations reproduce the configured mean and standard deviation.
 
 Worker outage:
 

@@ -192,7 +192,12 @@
         "meanMicros": {
           "type": "number",
           "exclusiveMinimum": 0,
-          "description": "Mean service time in microseconds. Required when distribution is EXPONENTIAL."
+          "description": "Mean service time in microseconds. Required when distribution is EXPONENTIAL or LOGNORMAL."
+        },
+        "stdDevMicros": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Standard deviation of the service time in microseconds. Required when distribution is LOGNORMAL."
         }
       },
       "allOf": [
@@ -209,13 +214,20 @@
             "required": ["distribution"]
           },
           "then": { "required": ["meanMicros"] }
+        },
+        {
+          "if": {
+            "properties": { "distribution": { "const": "LOGNORMAL" } },
+            "required": ["distribution"]
+          },
+          "then": { "required": ["meanMicros", "stdDevMicros"] }
         }
       ]
     },
     "ServiceDistribution": {
       "type": "string",
-      "enum": ["CONSTANT", "EXPONENTIAL"],
-      "description": "CONSTANT uses a fixed duration; EXPONENTIAL samples from a memoryless distribution."
+      "enum": ["CONSTANT", "EXPONENTIAL", "LOGNORMAL"],
+      "description": "CONSTANT uses a fixed duration; EXPONENTIAL samples from a memoryless distribution; LOGNORMAL samples a right-skewed distribution from a real-space mean and standard deviation."
     },
     "WorkloadDefinition": {
       "type": "object",
