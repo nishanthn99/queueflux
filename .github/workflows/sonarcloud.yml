@@ -5,7 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main, ci/continuous-testing-main-protection]
-    types: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened, ready_for_review]
   schedule:
     - cron: "41 3 * * 1"
   workflow_dispatch:
@@ -19,9 +19,54 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  sonar-readiness:
+    name: SonarQube Cloud readiness
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - name: Check SonarQube configuration and PR trust boundary
+        id: check
+        env:
+          SONAR_ENABLED: ${{ vars.SONAR_ENABLED }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
+          SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+        shell: bash
+        run: |
+          enabled=false
+          if [ "$IS_FORK_PR" = "true" ]; then
+            reason="SonarQube Cloud analysis is not run for fork pull requests because GitHub withholds repository secrets from those runs. The normal CI, CodeQL and Semgrep checks still run without secrets."
+          elif [ "$SONAR_ENABLED" = "false" ]; then
+            reason="SonarQube Cloud analysis is explicitly disabled by the SONAR_ENABLED repository variable."
+          elif [ -z "$SONAR_TOKEN" ]; then
+            reason="SonarQube Cloud is not configured: add the SONAR_TOKEN repository secret."
+          elif [ -z "$SONAR_ORGANIZATION" ]; then
+            reason="SonarQube Cloud is not configured: add the SONAR_ORGANIZATION repository variable."
+          elif [ -z "$SONAR_PROJECT_KEY" ]; then
+            reason="SonarQube Cloud is not configured: add the SONAR_PROJECT_KEY repository variable."
+          else
+            enabled=true
+            reason="SonarQube Cloud is configured. The analysis job will run."
+          fi
+
+          echo "enabled=$enabled" >> "$GITHUB_OUTPUT"
+          {
+            echo "## SonarQube Cloud readiness"
+            echo
+            echo "$reason"
+            echo
+            echo "Set `SONAR_TOKEN` as a repository secret and `SONAR_ORGANIZATION` / `SONAR_PROJECT_KEY` as repository variables. Set `SONAR_ENABLED=false` only to opt out."
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$enabled" != "true" ]; then
+            echo "::notice::$reason"
+          fi
+
   sonar-analysis:
     name: SonarQube Cloud analysis
-    if: ${{ vars.SONAR_ENABLED == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    needs: sonar-readiness
+    if: ${{ needs.sonar-readiness.outputs.enabled == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -41,11 +86,6 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: "22"
-      - name: Validate SonarQube configuration
-        run: |
-          test -n "$SONAR_TOKEN" || { echo "SONAR_TOKEN secret is missing"; exit 1; }
-          test -n "$SONAR_ORGANIZATION" || { echo "SONAR_ORGANIZATION repository variable is missing"; exit 1; }
-          test -n "$SONAR_PROJECT_KEY" || { echo "SONAR_PROJECT_KEY repository variable is missing"; exit 1; }
       - name: Generate frontend LCOV coverage
         working-directory: web
         run: |
