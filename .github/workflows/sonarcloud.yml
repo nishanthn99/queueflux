@@ -57,7 +57,7 @@ jobs:
             echo
             echo "$reason"
             echo
-            echo "Set `SONAR_TOKEN` as a repository secret and `SONAR_ORGANIZATION` / `SONAR_PROJECT_KEY` as repository variables. Set `SONAR_ENABLED=false` only to opt out."
+            echo 'Configure SONAR_TOKEN as a repository secret and SONAR_ORGANIZATION / SONAR_PROJECT_KEY as repository variables. Set SONAR_ENABLED=false only to opt out.'
           } >> "$GITHUB_STEP_SUMMARY"
           if [ "$enabled" != "true" ]; then
             echo "::notice::$reason"
