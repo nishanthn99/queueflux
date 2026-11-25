@@ -26,7 +26,15 @@ For required status checks, select both jobs from **Continuous Testing** after t
 - `Backend tests`
 - `Frontend lint and production build`
 
-The existing `CI` workflow also runs on main pull requests. The two checks above are the dedicated continuous-testing gates and include the full Maven verification, frontend lint/build, and high-severity npm advisory check.
+The existing **CI** workflow also runs on main pull requests. The two checks above are the dedicated continuous-testing gates and include full Maven verification, frontend lint/build, and high-severity npm advisory checks.
+
+After a successful Code Security run, also require these checks if you want static analysis to gate merges:
+
+- `CodeQL analysis (java-kotlin)`
+- `CodeQL analysis (javascript-typescript)`
+- `Semgrep Community SAST`
+
+CodeQL and Semgrep now analyze fork-originated PRs without repository secrets. For fork PRs, SARIF is retained as a workflow artifact instead of being uploaded to GitHub Code Scanning because GitHub grants fork workflows a read-only token. SonarQube Cloud is different: it requires the repository secret `SONAR_TOKEN`, so its analysis remains limited to pushes to `main` and same-repository PRs.
 
 Keep the ruleset applicable to administrators. Leave the bypass list empty unless there is a deliberate, documented emergency process. Do not add a general administrator bypass just to make routine changes easier.
 
@@ -39,25 +47,13 @@ GitHub does not count the pull-request author's own approval as an independent r
 1. Update local `main` and create a short-lived feature branch.
 2. Commit the change to that branch; do not push directly to `main`.
 3. Open a PR targeting `main` and complete the PR template.
-4. Wait for both Continuous Testing checks to pass.
-5. Resolve review conversations and update the branch with the latest `main` when GitHub requests it.
-6. Merge the PR using the repository's allowed merge strategy.
+4. Approve workflow runs from forks when GitHub's contributor approval policy requests it.
+5. Wait for required Continuous Testing and Code Security checks to pass.
+6. Resolve review conversations and update the branch with the latest `main` when GitHub requests it.
+7. Merge the PR using the repository's allowed merge strategy.
 
 ## Workflow security
 
-The continuous-testing workflow uses read-only repository permissions, disables persisted checkout credentials, and pins actions to full commit SHAs. Dependabot checks the GitHub Actions, npm, and Maven manifests weekly and proposes dependency update PRs.
+The continuous-testing workflow uses read-only repository permissions, disables persisted checkout credentials, and pins actions to full commit SHAs. Dependabot checks GitHub Actions, npm, and Maven manifests weekly and proposes dependency update PRs.
 
 For details about workflow dependency pinning, see GitHub's [secure use reference](https://docs.github.com/en/actions/reference/security/secure-use).
-
-
-## Additional quality and security checks
-
-After the quality/security PR is merged and each workflow has run at least once, add the following exact job checks to the `main` ruleset:
-
-- Backend tests and JaCoCo coverage
-- Frontend tests, lint, build and coverage
-- CodeQL analysis for Java/Kotlin
-- CodeQL analysis for JavaScript/TypeScript
-- Semgrep Community SAST
-
-Add SonarQube Cloud analysis only after the project and repository secret/variables are configured and the workflow is enabled. See [QUALITY_AND_SECURITY.md](QUALITY_AND_SECURITY.md).
