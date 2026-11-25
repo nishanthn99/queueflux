@@ -54,6 +54,8 @@ jobs:
         uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           category: "/language:${{ matrix.language }}"
+          # Keep SARIF under GITHUB_WORKSPACE so it can be attached to fork PRs.
+          output: codeql-sarif
           # Fork PRs have a read-only GITHUB_TOKEN. Run the scanner but do not
           # attempt Code Scanning or database uploads from an untrusted fork.
           upload: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'never' || 'always' }}
@@ -67,11 +69,11 @@ jobs:
             echo "CodeQL analysis ran for this fork pull request. GitHub does not grant fork workflows permission to upload Code Scanning results, so the SARIF output is attached as a workflow artifact instead."
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload CodeQL SARIF for fork PR review
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+        if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && hashFiles('codeql-sarif/**/*.sarif') != '' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: codeql-sarif-${{ matrix.language }}
-          path: ${{ steps.analyze.outputs.sarif-output }}/**/*.sarif
+          path: ${{ steps.analyze.outputs.sarif-output }}/
           if-no-files-found: error
           retention-days: 7
 
