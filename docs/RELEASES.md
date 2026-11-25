@@ -1,31 +1,41 @@
 # QueueFlux releases and versioning
 
-## Single source of truth
+## Automatic semantic versioning
 
-The root Maven parent POM, `pom.xml`, is the canonical version source for the entire backend reactor. Keep the four child module parent-version declarations aligned with it:
+QueueFlux uses [Release Please](https://github.com/googleapis/release-please) with Conventional Commits. The root Maven parent POM is the canonical project version. Release Please updates it and keeps all four child-module parent versions synchronized.
 
-- `backend/queue-model/pom.xml`
-- `backend/simulation-engine/pom.xml`
-- `backend/simulation-profiles/pom.xml`
-- `backend/server/pom.xml`
+Use Conventional Commit prefixes on commits or PR titles:
 
-The current planned release is **0.1.0**. Do not maintain a separate version file that can drift from the Maven parent.
+| Commit type | Version bump |
+|---|---|
+| `fix:` | Patch (e.g. 0.1.0 → 0.1.1) |
+| `feat:` | Minor (e.g. 0.1.0 → 0.2.0) |
+| `feat!:` or a `BREAKING CHANGE:` footer | Major (1.0.0 → 2.0.0); before 1.0, breaking changes follow pre-1.0 SemVer behavior |
+| `docs:`, `test:`, `chore:`, `ci:`, `refactor:` | No release by themselves |
 
-## Automatic GitHub Release
+For 0.x releases, feature commits bump the minor version and fixes bump the patch version.
 
-The `Create GitHub Release` workflow runs when a versioned POM change reaches `main`, or when manually dispatched. It:
+## Release flow
 
-1. Reads the version from the root parent POM.
-2. Rejects empty, malformed, or `-SNAPSHOT` versions.
-3. Skips safely if that tag/release already exists.
-4. Runs `mvn clean verify` and the frontend production build.
-5. Attaches the executable API JAR, a ZIP of Maven module JARs, and a ZIP of the frontend production bundle.
-6. Creates a GitHub Release with auto-generated release notes and tag `v<version>`.
+1. Changes merge into `main` using Conventional Commit-compatible PR titles.
+2. Release Please automatically opens or updates a **Release PR** with the version bump and changelog. No one manually edits the release version.
+3. Review and merge that Release PR (this is the deliberate approval gate).
+4. Release Please creates the matching tag and GitHub Release automatically.
+5. The same workflow builds/tests the backend and frontend and attaches the executable API JAR, Maven-module ZIP, and frontend ZIP. Releases below 1.0.0 are marked prerelease.
 
-Versions below 1.0.0 are marked as prereleases to signal that the API and simulation semantics may still evolve.
+## Initial release bootstrap
 
-## Release process for future versions
+The initial manifest is set to `0.0.0` so Release Please can propose the first release from the project's Conventional Commits. The first release should be `0.1.0` (or a version determined from the commit history).
 
-For a new release, update the root POM and every child module's parent version in a reviewed PR. Use a stable Maven version (for example `0.1.1`), merge it to `main`, and the release workflow will create `v0.1.1`. Do not reuse a released version or overwrite an existing tag.
+## Permissions
 
-The published GitHub Release triggers the separate `Publish Maven artifacts` workflow, which publishes the Maven reactor to GitHub Packages.
+The workflow uses the repository's `GITHUB_TOKEN` with `contents: write` and `pull-requests: write`. In GitHub repository settings, ensure **Settings → Actions → General → Workflow permissions** allows GitHub Actions to create pull requests. If this setting is disabled, Release Please cannot open its release PR.
+
+## Conventional Commit examples
+
+- `feat: add worker scaling scenarios`
+- `fix: correct retry backoff calculation`
+- `feat(api)!: change simulation result schema`
+- `docs: explain virtual time`
+
+See [Conventional Commits](https://www.conventionalcommits.org/) and the [Release Please docs](https://github.com/googleapis/release-please).
