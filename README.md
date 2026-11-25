@@ -139,9 +139,13 @@ cd web && npm install && npm run build
 
 GitHub Actions runs Maven verification with JaCoCo coverage, frontend tests with Vitest/V8 coverage, linting and production builds. Separate workflows run CodeQL (Java and TypeScript), Semgrep Community SAST, optional SonarQube Cloud analysis, and versioned Maven artifact publishing. See [quality and security](docs/QUALITY_AND_SECURITY.md) and [artifact publishing and free hosting](docs/ARTIFACTS_AND_FREE_HOSTING.md).
 
+## Releases and versioning
+
+The root parent `pom.xml` is the source of truth for the QueueFlux version. When a stable version is merged to `main`, the **Create GitHub Release** workflow builds and tests the project, creates the matching `v<version>` release, and attaches API, Maven-module, and frontend build artifacts. Releases below 1.0.0 are marked as pre-releases. See [release and versioning](docs/RELEASES.md).
+
 ## Publish Maven artifacts
 
-Create a GitHub Release (for example `v0.1.0`) to publish the Maven modules to GitHub Packages, or run the **Publish Maven artifacts** workflow manually. See [artifact publishing and free hosting](docs/ARTIFACTS_AND_FREE_HOSTING.md) for GitHub Packages, optional JFrog Artifactory, and consumer setup.
+Publishing a GitHub Release triggers the **Publish Maven artifacts** workflow to publish the Maven modules to GitHub Packages. See [artifact publishing and free hosting](docs/ARTIFACTS_AND_FREE_HOSTING.md) for GitHub Packages, optional JFrog Artifactory, and consumer setup.
 
 ## Host QueueFlux for free
 
