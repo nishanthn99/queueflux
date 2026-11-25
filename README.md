@@ -141,7 +141,7 @@ GitHub Actions runs Maven verification with JaCoCo coverage, frontend tests with
 
 ## Releases and versioning
 
-The root parent `pom.xml` is the source of truth for the QueueFlux version. When a stable version is merged to `main`, the **Create GitHub Release** workflow builds and tests the project, creates the matching `v<version>` release, and attaches API, Maven-module, and frontend build artifacts. Releases below 1.0.0 are marked as pre-releases. See [release and versioning](docs/RELEASES.md).
+QueueFlux uses Conventional Commits and Release Please to automatically determine semantic version bumps and open a Release PR with the version and changelog updates. After that PR is reviewed and merged, the workflow creates the GitHub Release, builds/tests the project, and attaches API, Maven-module, and frontend artifacts. Releases below 1.0.0 are marked as pre-releases. See [release and versioning](docs/RELEASES.md).
 
 ## Publish Maven artifacts
 
