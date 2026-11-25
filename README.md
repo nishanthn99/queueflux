@@ -4,7 +4,7 @@
 
 QueueFlux is an open-source, discrete-event simulation platform for studying how background-job queues behave under workload pressure. Configure arrival patterns, service times, worker capacity, priorities, rate limits, retries, failures, and planned worker outages. Run reproducible experiments in virtual time and inspect throughput, waiting time, tail latency, backlog, retries, dead-letter outcomes, and utilization.
 
-> **Project status:** Active early development (0.1.0-SNAPSHOT). QueueFlux now provides a multi-queue simulation baseline, asynchronous PostgreSQL-backed runs, SSE progress, and replicated stochastic comparisons. It is an experimentation model, not a production queue or an exact broker emulator.
+> **Project status:** Early development; release version is tracked in the root parent POM (`pom.xml`) (0.1.0).. QueueFlux now provides a multi-queue simulation baseline, asynchronous PostgreSQL-backed runs, SSE progress, and replicated stochastic comparisons. It is an experimentation model, not a production queue or an exact broker emulator.
 
 ## Highlights
 
