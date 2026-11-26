@@ -145,7 +145,7 @@ Create a GitHub Release (for example `v0.1.0`) to publish the Maven modules to G
 
 ## Host QueueFlux for free
 
-The repository includes a Render Blueprint for the Spring Boot API. Deploy the Vite frontend to Cloudflare Pages and use Neon for a free PostgreSQL project. Follow [the deployment guide](docs/ARTIFACTS_AND_FREE_HOSTING.md); provider accounts and secrets must be configured by the repository owner.
+The repository includes a Render Blueprint for the Spring Boot API and frontend. The dedicated `deploy` branch is the deployment source; see [deployment branch workflow and protection](docs/DEPLOY_BRANCH.md) and [the hosting guide](docs/ARTIFACTS_AND_FREE_HOSTING.md). Provider accounts and secrets must be configured by the repository owner.
 
 ## Current boundaries
 
