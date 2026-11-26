@@ -2,9 +2,9 @@ name: Code Security
 
 on:
   push:
-    branches: [main]
+    branches: [main, deploy]
   pull_request:
-    branches: [main, ci/continuous-testing-main-protection]
+    branches: [main, deploy, ci/continuous-testing-main-protection]
     types: [opened, synchronize, reopened]
   schedule:
     - cron: "17 4 * * 1"
