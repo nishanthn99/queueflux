@@ -4,7 +4,7 @@
 
 QueueFlux is an open-source, discrete-event simulation platform for studying how background-job queues behave under workload pressure. Configure arrival patterns, service times, worker capacity, priorities, rate limits, retries, failures, and planned worker outages. Run reproducible experiments in virtual time and inspect throughput, waiting time, tail latency, backlog, retries, dead-letter outcomes, and utilization.
 
-> **Project status:** Active early development (0.1.0-SNAPSHOT). QueueFlux now provides a multi-queue simulation baseline, asynchronous PostgreSQL-backed runs, SSE progress, and replicated stochastic comparisons. It is an experimentation model, not a production queue or an exact broker emulator.
+> **Project status:** Early development; release version is tracked in the root parent POM (`pom.xml`) (0.1.0).. QueueFlux now provides a multi-queue simulation baseline, asynchronous PostgreSQL-backed runs, SSE progress, and replicated stochastic comparisons. It is an experimentation model, not a production queue or an exact broker emulator.
 
 ## Highlights
 
@@ -139,9 +139,13 @@ cd web && npm install && npm run build
 
 GitHub Actions runs Maven verification with JaCoCo coverage, frontend tests with Vitest/V8 coverage, linting and production builds. Separate workflows run CodeQL (Java and TypeScript), Semgrep Community SAST, optional SonarQube Cloud analysis, and versioned Maven artifact publishing. See [quality and security](docs/QUALITY_AND_SECURITY.md) and [artifact publishing and free hosting](docs/ARTIFACTS_AND_FREE_HOSTING.md).
 
+## Releases and versioning
+
+QueueFlux uses Conventional Commits and Release Please to automatically determine semantic version bumps and open a Release PR with the version and changelog updates. After that PR is reviewed and merged, the workflow creates the GitHub Release, builds/tests the project, and attaches API, Maven-module, and frontend artifacts. Releases below 1.0.0 are marked as pre-releases. See [release and versioning](docs/RELEASES.md).
+
 ## Publish Maven artifacts
 
-Create a GitHub Release (for example `v0.1.0`) to publish the Maven modules to GitHub Packages, or run the **Publish Maven artifacts** workflow manually. See [artifact publishing and free hosting](docs/ARTIFACTS_AND_FREE_HOSTING.md) for GitHub Packages, optional JFrog Artifactory, and consumer setup.
+Publishing a GitHub Release triggers the **Publish Maven artifacts** workflow to publish the Maven modules to GitHub Packages. See [artifact publishing and free hosting](docs/ARTIFACTS_AND_FREE_HOSTING.md) for GitHub Packages, optional JFrog Artifactory, and consumer setup.
 
 ## Host QueueFlux for free
 

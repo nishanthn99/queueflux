@@ -1,0 +1,23 @@
+{
+  "release-type": "maven",
+  "bump-minor-pre-major": true,
+  "prerelease": false,
+  "extra-files": [
+    {
+      "type": "generic",
+      "path": "backend/queue-model/pom.xml"
+    },
+    {
+      "type": "generic",
+      "path": "backend/simulation-engine/pom.xml"
+    },
+    {
+      "type": "generic",
+      "path": "backend/simulation-profiles/pom.xml"
+    },
+    {
+      "type": "generic",
+      "path": "backend/server/pom.xml"
+    }
+  ]
+}

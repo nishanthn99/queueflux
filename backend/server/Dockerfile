@@ -10,7 +10,7 @@ RUN groupadd --system --gid 10001 queueflux \
     && useradd --system --uid 10001 --gid 10001 \
       --no-create-home --home-dir /nonexistent \
       --shell /usr/sbin/nologin queueflux
-COPY --from=build --chown=10001:10001 /workspace/backend/server/target/server-0.1.0-SNAPSHOT.jar /app/app.jar
+COPY --from=build --chown=10001:10001 /workspace/backend/server/target/server-*.jar /app/app.jar
 USER 10001:10001
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
