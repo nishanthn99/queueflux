@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - main
+      - deploy
   schedule:
     - cron: "23 2 * * *"
   workflow_dispatch:
