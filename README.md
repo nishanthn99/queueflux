@@ -137,7 +137,7 @@ mvn -B test
 cd web && npm install && npm run build
 ```
 
-GitHub Actions runs Maven verification with JaCoCo coverage, frontend tests with Vitest/V8 coverage, linting and production builds. Separate workflows run CodeQL (Java and TypeScript), Semgrep Community SAST, optional SonarQube Cloud analysis, and versioned Maven artifact publishing. See [quality and security](docs/QUALITY_AND_SECURITY.md) and [artifact publishing and free hosting](docs/ARTIFACTS_AND_FREE_HOSTING.md).
+GitHub Actions CI runs Maven verification with JaCoCo coverage, API Docker image/non-root validation, frontend tests with Vitest/V8 coverage, linting and production builds, plus schema and CLI checks. Continuous Testing adds PostgreSQL-backed API integration tests. Separate workflows run CodeQL (Java and TypeScript), Semgrep Community SAST, optional SonarQube Cloud analysis, release automation, and Maven artifact publishing. Duplicate Build Artifacts validations were consolidated into CI. See [quality and security](docs/QUALITY_AND_SECURITY.md) and [artifact publishing and free hosting](docs/ARTIFACTS_AND_FREE_HOSTING.md).
 
 ## Releases and versioning
 
