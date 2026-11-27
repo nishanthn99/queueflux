@@ -137,7 +137,7 @@ mvn -B test
 cd web && npm install && npm run build
 ```
 
-GitHub Actions CI runs Maven verification with JaCoCo coverage, API Docker image/non-root validation, frontend tests with Vitest/V8 coverage, linting and production builds, plus schema and CLI checks. Continuous Testing adds PostgreSQL-backed API integration tests. Separate workflows run CodeQL (Java and TypeScript), Semgrep Community SAST, optional SonarQube Cloud analysis, release automation, and Maven artifact publishing. Duplicate Build Artifacts validations were consolidated into CI. See [quality and security](docs/QUALITY_AND_SECURITY.md) and [artifact publishing and free hosting](docs/ARTIFACTS_AND_FREE_HOSTING.md).
+GitHub Actions **Continuous Integration** runs Maven verification/JaCoCo, API Docker non-root validation, frontend tests/lint/build, CLI tests, scenario-schema validation and build-artifact uploads. **Continuous Testing** runs the PostgreSQL-backed API integration suite only. **Code Security** runs CodeQL and Semgrep. SonarCloud Quality Gate results come from the SonarCloud GitHub App (`SonarCloud Code Analysis`), not a duplicate Actions workflow. Release automation and Maven publishing remain separate. See [quality and security](docs/QUALITY_AND_SECURITY.md) and [artifact publishing and free hosting](docs/ARTIFACTS_AND_FREE_HOSTING.md).
 
 ## Releases and versioning
 
