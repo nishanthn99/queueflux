@@ -22,20 +22,20 @@ jobs:
   configuration-status:
     name: SonarQube configuration status
     runs-on: ubuntu-latest
-    if: ${{ vars.SONAR_ENABLED != 'true' }}
+    if: ${{ vars.SONAR_ORGANIZATION == '' || vars.SONAR_PROJECT_KEY == '' }}
     steps:
-      - name: Explain disabled analysis
+      - name: Explain missing configuration
         run: |
           {
-            echo "## SonarQube Cloud is not enabled"
+            echo "## SonarQube Cloud configuration is incomplete"
             echo ""
-            echo "Analysis is skipped because repository variable `SONAR_ENABLED` is not set to `true`."
-            echo "Configure `SONAR_TOKEN`, `SONAR_ORGANIZATION`, and `SONAR_PROJECT_KEY`, then set `SONAR_ENABLED=true` to activate the analysis job."
+            echo "Set repository variables SONAR_ORGANIZATION and SONAR_PROJECT_KEY, and secret SONAR_TOKEN."
+            echo "Analysis runs automatically when those values are available; SONAR_ENABLED is not required."
           } >> "$GITHUB_STEP_SUMMARY"
 
   sonar-analysis:
     name: SonarQube Cloud analysis
-    if: ${{ vars.SONAR_ENABLED == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: ${{ vars.SONAR_ORGANIZATION != '' && vars.SONAR_PROJECT_KEY != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -63,7 +63,7 @@ jobs:
       - name: Generate frontend LCOV coverage
         working-directory: web
         run: |
-          npm install --no-audit --no-fund
+          npm ci --no-audit --no-fund
           npm run test:coverage
       - name: Build, test, collect JaCoCo and run SonarQube analysis
         run: |
