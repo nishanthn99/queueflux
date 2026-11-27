@@ -19,6 +19,20 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  configuration-status:
+    name: SonarQube configuration status
+    runs-on: ubuntu-latest
+    if: ${{ vars.SONAR_ENABLED != 'true' }}
+    steps:
+      - name: Explain disabled analysis
+        run: |
+          {
+            echo "## SonarQube Cloud is not enabled"
+            echo ""
+            echo "Analysis is skipped because repository variable `SONAR_ENABLED` is not set to `true`."
+            echo "Configure `SONAR_TOKEN`, `SONAR_ORGANIZATION`, and `SONAR_PROJECT_KEY`, then set `SONAR_ENABLED=true` to activate the analysis job."
+          } >> "$GITHUB_STEP_SUMMARY"
+
   sonar-analysis:
     name: SonarQube Cloud analysis
     if: ${{ vars.SONAR_ENABLED == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
