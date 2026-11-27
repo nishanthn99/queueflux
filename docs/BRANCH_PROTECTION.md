@@ -38,7 +38,7 @@ Require the following CI and Code Security jobs (select the exact job names GitH
 
 The former **Build Artifacts** workflow was removed because it repeated Maven verification and frontend builds already performed by CI. Its Docker image build/non-root smoke test and artifact uploads now run within CI.
 
-SonarQube Cloud analysis is enabled automatically when `SONAR_ORGANIZATION`, `SONAR_PROJECT_KEY`, and the `SONAR_TOKEN` secret are configured; no `SONAR_ENABLED` toggle is needed.
+SonarQube Cloud analysis now runs automatically on supported PRs/pushes when the project configuration is present. The workflow accepts `SONAR_ORGANIZATION` and `SONAR_PROJECT_KEY` as repository variables **or secrets**, plus `SONAR_TOKEN` as a secret. No `SONAR_ENABLED` toggle is required.
 
 ## Deploy branch ruleset
 
