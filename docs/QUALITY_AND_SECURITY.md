@@ -32,7 +32,7 @@ npm run build
 
 ## Continuous Testing — scheduled end-to-end validation
 
-CT **does not run on pushes or PRs**. It runs daily and through manual dispatch, and checks the assembled system against a real PostgreSQL service in a disposable GitHub Actions environment.
+CT runs on PRs targeting main/deploy, daily and through manual dispatch (not on branch pushes). It checks the assembled system against a real PostgreSQL service in a disposable GitHub Actions environment.
 
 It builds the backend artifact without rerunning unit tests, starts the API, then tests:
 - Health and database connectivity
@@ -68,4 +68,4 @@ Never commit the token.
 
 ## PR required checks
 
-Require CI jobs and Code Security jobs as listed in [BRANCH_PROTECTION.md](BRANCH_PROTECTION.md). **Do not add CT as a required PR status check** because it only runs on schedule/manual dispatch. Add Sonar analysis only after it is enabled and reliably reports a result.
+Require CI jobs, the unique **PostgreSQL-backed API integration tests** CT job, and Code Security jobs as listed in [BRANCH_PROTECTION.md](BRANCH_PROTECTION.md). Add Sonar analysis only after it is enabled and reliably reports a result.
