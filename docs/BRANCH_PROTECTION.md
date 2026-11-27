@@ -35,7 +35,7 @@ Require these **CI and Code Security** jobs (select the exact job names shown by
 - CodeQL analysis (javascript-typescript, none)
 - Semgrep Community SAST
 
-Do not require Continuous Testing: CT is a scheduled/manual end-to-end suite and does not run on pull requests. Do not require SonarCloud until its project and repository secret/variables are configured and analysis is enabled.
+Require the unique CT job **PostgreSQL-backed API integration tests** as well. CT runs this distinct system-level suite on PRs to main/deploy and on its daily schedule/manual dispatch. Do not require SonarCloud until its project and repository secret/variables are configured and analysis is enabled.
 
 ## Pull-request workflow
 
