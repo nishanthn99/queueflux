@@ -50,7 +50,7 @@ jobs:
           version = root.findtext("m:version", namespaces=ns)
           if not version:
               version = root.findtext("m:parent/m:version", namespaces=ns)
-          if not version or not re.fullmatch(r"\\d+\\.\\d+\\.\\d+(?:[-.][0-9A-Za-z.-]+)?", version):
+          if not version or not re.fullmatch(r"\d+\.\d+\.\d+(?:[-.][0-9A-Za-z.-]+)?", version):
               raise SystemExit(f"Parent POM version is not semantic: {version!r}")
           print(f"Validated release version: {version}")
           PY
