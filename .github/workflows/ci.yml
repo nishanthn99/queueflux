@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, deploy]
   pull_request:
-    branches: [main, ci/continuous-testing-main-protection]
+    branches: [main, deploy]
 
 permissions:
   contents: read
@@ -17,7 +17,7 @@ jobs:
   backend:
     name: Backend tests and JaCoCo coverage
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -29,12 +29,34 @@ jobs:
           cache: maven
       - name: Verify backend modules and generate JaCoCo XML
         run: mvn -B -ntp clean verify
+      - name: Build API Docker image
+        run: docker build --file backend/server/Dockerfile --tag queueflux-api:ci .
+      - name: Verify API image runs as non-root
+        run: |
+          test "$(docker run --rm --entrypoint id queueflux-api:ci -u)" = "10001"
+          test "$(docker run --rm --entrypoint id queueflux-api:ci -g)" = "10001"
       - name: Publish backend coverage report
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: backend-jacoco-coverage
           path: backend/**/target/site/jacoco/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload backend JARs
+        if: success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: queueflux-backend-jars
+          path: backend/*/target/*.jar
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Upload Maven test reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: queueflux-backend-test-reports
+          path: "**/target/surefire-reports/**"
           if-no-files-found: warn
           retention-days: 14
 
@@ -65,8 +87,10 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: "22"
+          cache: npm
+          cache-dependency-path: cli/package-lock.json
       - name: Install CLI dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Run CLI tests
         run: npm test
 
@@ -84,8 +108,10 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
       - name: Install frontend dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Run frontend tests and collect V8 coverage
         run: npm run test:coverage
       - name: Lint frontend
@@ -99,4 +125,12 @@ jobs:
           name: frontend-lcov-coverage
           path: web/coverage/
           if-no-files-found: warn
+          retention-days: 14
+      - name: Upload frontend production build
+        if: success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: queueflux-frontend-dist
+          path: web/dist/
+          if-no-files-found: error
           retention-days: 14
