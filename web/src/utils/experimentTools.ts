@@ -9,8 +9,11 @@ export interface KeyValueStorage {
 
 function nextId(prefix: string, existing: string[]): string {
   const highest = existing.reduce((max, value) => {
-    const match = value.match(new RegExp('^' + prefix + '-(\\d+)$'));
-    return match ? Math.max(max, Number(match[1])) : max;
+    const expectedPrefix = prefix + '-';
+    if (!value.startsWith(expectedPrefix)) return max;
+    const suffix = value.slice(expectedPrefix.length);
+    if (!/^\\d+$/.test(suffix)) return max;
+    return Math.max(max, Number(suffix));
   }, 0);
   return prefix + '-' + (highest + 1);
 }
