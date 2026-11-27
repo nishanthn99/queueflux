@@ -38,11 +38,11 @@ Require the following CI and Code Security jobs (select the exact job names GitH
 
 The former **Build Artifacts** workflow was removed because it repeated Maven verification and frontend builds already performed by CI. Its Docker image build/non-root smoke test and artifact uploads now run within CI.
 
-SonarQube Cloud is optional and should only be required after it is enabled and reports a reliable status.
+SonarQube Cloud analysis is enabled automatically when `SONAR_ORGANIZATION`, `SONAR_PROJECT_KEY`, and the `SONAR_TOKEN` secret are configured; no `SONAR_ENABLED` toggle is needed.
 
 ## Deploy branch ruleset
 
-Use a separate active ruleset targeting exactly `deploy`. Require PRs, one independent approval, stale-review dismissal, latest-push approval, Code Owner approval, resolved conversations, up-to-date branches, deletion protection and force-push blocking.
+Use a separate active ruleset targeting exactly `deploy`. **Only CODEOWNERS should approve and merge into `deploy`**, particularly promotions from `main`. Require PRs, Code Owner approval, stale-review dismissal, latest-push approval, resolved conversations, up-to-date branches, deletion protection and force-push blocking. Use the ruleset's Restrict updates / allowed actors option to limit who can update/merge to the CODEOWNERS users or team; do not include general contributors or bypass actors. Disable auto-merge for deploy. These are repository settings and cannot be changed by workflow commits.
 
 Require the same CI, Code Security and PostgreSQL-backed CT checks above. CT runs on PRs to main/deploy, its daily schedule, and manual dispatch; it is not triggered by branch pushes.
 
@@ -52,7 +52,8 @@ Require the same CI, Code Security and PostgreSQL-backed CT checks above. CT run
 2. Open a PR targeting `main`.
 3. Wait for all required CI, CT and Code Security checks to pass.
 4. Obtain independent approval, resolve review conversations and update the branch if required.
-5. Merge using the repository's allowed merge strategy.
+5. Merge into `main`.
+6. A CODEOWNER handles the promotion PR from `main` into `deploy` and performs the final merge.
 
 ## Workflow security
 
