@@ -88,6 +88,7 @@ export default function App() {
 
   const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:8080';
   const chartData = useMemo(() => result ? buildChartData(result.trace) : [], [result]);
+  const queueIds = scenario.queues.map(q => q.id);
 
   // — Scenario mutations —
   function patch(p: Partial<Scenario>) { setScenario(s => ({ ...s, ...p })); }
@@ -538,7 +539,7 @@ export default function App() {
                 {saved.map(exp => (
                   <div key={exp.name} className="saved-item">
                     <span className="saved-name" onClick={() => loadExperiment(exp.name)} title="Load this experiment">{exp.name}</span>
-                    <button className="saved-export" title="Export as JSON" onClick={() => triggerDownload(JSON.stringify(exp.scenario, null, 2), `${exp.name.replace(/\s+/g, '-').toLowerCase()}.json`, 'application/json')}><Download size={11} /></button>
+                    <button className="saved-export" title="Export as JSON" onClick={() => triggerDownload(serializeScenario(exp.scenario), scenarioJsonFilename(exp.scenario), 'application/json')}><Download size={11} /></button>
                     <button className="item-remove sm" title="Delete" onClick={() => deleteExperiment(exp.name)}><Trash2 size={11} /></button>
                   </div>
                 ))}
