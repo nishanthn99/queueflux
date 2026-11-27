@@ -88,10 +88,8 @@ jobs:
       - name: Verify and publish to GitHub Packages
         if: env.MAVEN_REGISTRY == 'github'
         run: |
-          mvn -B -ntp clean verify
           mvn -B -ntp deploy -DskipTests
       - name: Verify and publish to JFrog Artifactory
         if: env.MAVEN_REGISTRY == 'jfrog'
         run: |
-          mvn -B -ntp clean verify
           mvn -B -ntp deploy -DskipTests "-DaltDeploymentRepository=jfrog::${JFROG_MAVEN_REPO_URL}"
