@@ -137,7 +137,7 @@ mvn -B test
 cd web && npm install && npm run build
 ```
 
-GitHub Actions runs Maven verification with JaCoCo coverage, frontend tests with Vitest/V8 coverage, linting and production builds. Separate workflows run CodeQL (Java and TypeScript), Semgrep Community SAST, optional SonarQube Cloud analysis, and versioned Maven artifact publishing. See [quality and security](docs/QUALITY_AND_SECURITY.md) and [artifact publishing and free hosting](docs/ARTIFACTS_AND_FREE_HOSTING.md).
+GitHub Actions uses **Continuous Integration** for Maven verification/JaCoCo, API Docker non-root validation, frontend tests/lint/build, CLI tests, scenario-schema validation and build artifacts. **Continuous Testing** separately runs PostgreSQL-backed API integration checks. **Code Security** runs CodeQL and Semgrep. SonarCloud Quality Gate results are supplied by the SonarCloud GitHub App (`SonarCloud Code Analysis`), not a duplicate repository workflow. Release automation and Maven publishing remain separate. See [quality and security](docs/QUALITY_AND_SECURITY.md) and [artifact publishing and free hosting](docs/ARTIFACTS_AND_FREE_HOSTING.md).
 
 ## Releases and versioning
 
@@ -149,7 +149,7 @@ Publishing a GitHub Release triggers the **Publish Maven artifacts** workflow to
 
 ## Host QueueFlux for free
 
-The repository includes a Render Blueprint for the Spring Boot API. Deploy the Vite frontend to Cloudflare Pages and use Neon for a free PostgreSQL project. Follow [the deployment guide](docs/ARTIFACTS_AND_FREE_HOSTING.md); provider accounts and secrets must be configured by the repository owner.
+The repository includes a Render Blueprint for the Spring Boot API and frontend. Both services are configured to deploy from the dedicated `deploy` branch. Follow [the deployment branch workflow and protection guide](docs/DEPLOY_BRANCH.md) and [the hosting guide](docs/ARTIFACTS_AND_FREE_HOSTING.md); provider accounts and secrets must be configured by the repository owner.
 
 ## Current boundaries
 
