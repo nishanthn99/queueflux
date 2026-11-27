@@ -12,7 +12,7 @@ services:
     runtime: docker
     plan: free
     region: singapore
-    branch: deploy/render-free
+    branch: deploy
     dockerfilePath: ./backend/server/Dockerfile
     dockerContext: .
     healthCheckPath: /actuator/health
@@ -45,7 +45,7 @@ services:
   - type: web
     name: queueflux-web
     runtime: static
-    branch: deploy/render-free
+    branch: deploy
     buildCommand: cd web && npm ci && npm run build
     staticPublishPath: web/dist
     envVars:

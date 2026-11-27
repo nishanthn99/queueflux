@@ -162,7 +162,7 @@ Requirements:
 - Maven 3.9+
 - Node.js 22+
 - npm 10+
-- PostgreSQL 17+
+- PostgreSQL 18+
 
 Configure the PostgreSQL connection using:
 
@@ -375,7 +375,7 @@ See [docs/RELEASES.md](docs/RELEASES.md) and [docs/ARTIFACTS_AND_FREE_HOSTING.md
 
 QueueFlux can be deployed as a demonstration or hobby application.
 
-The repository includes a Render Blueprint in `render.yaml`. It defines a Render-hosted Spring Boot API, a Render static frontend, and a Render PostgreSQL database. The Blueprint is a ready-to-configure deployment option; provider accounts, credentials, and environment values must still be supplied by the repository owner.
+The repository includes a Render Blueprint in `render.yaml` for a Render-hosted Spring Boot API, a Render static frontend, and a Render PostgreSQL database. Configure the Blueprint to read `render.yaml` from `main`; the API and frontend service entries each set `branch: deploy`, so Render builds application code from the protected `deploy` branch. Merging code into `main` alone does not update the hosted application: promote reviewed changes through a `main` → `deploy` pull request, then verify both Render deploys. See [the deployment branch and Render promotion guide](docs/DEPLOY_BRANCH.md).
 
 The hosting guide also describes an **alternative split-provider arrangement** for a low-traffic demo:
 
