@@ -2,9 +2,9 @@
 
 The workflows are designed to avoid repeating the same validation stage.
 
-## CI — pull-request quality gate
+## Continuous Integration — pull-request quality gate
 
-The `CI` workflow runs on PRs to `main` and `deploy`, and pushes to either protected branch.
+The `Continuous Integration` workflow runs on PRs to `main` and `deploy`, and pushes to either protected branch.
 
 | Area | Tool | Command / output |
 |---|---|---|
@@ -39,18 +39,9 @@ Code Security runs on PRs/pushes to main/deploy and weekly. It performs:
 - Semgrep Community scan using the auto ruleset.
 - SARIF upload to GitHub code scanning (when permitted).
 
-## SonarQube Cloud
+## SonarCloud Code Analysis — GitHub App
 
-The optional SonarQube Cloud workflow runs on PRs/pushes to main/deploy, weekly and manual dispatch. A configuration-status job explains when it is disabled. The actual analysis is skipped until `SONAR_ENABLED=true` and the token/project settings are present.
-
-To enable:
-
-1. Import `nishanthn99/queueflux` into SonarQube Cloud and create the project.
-2. Generate an analysis token.
-3. In GitHub Settings → Secrets and variables → Actions, set secret `SONAR_TOKEN` and variables `SONAR_ENABLED=true`, `SONAR_ORGANIZATION`, and `SONAR_PROJECT_KEY`.
-4. Run the workflow and verify the quality gate.
-
-Sonar currently runs its own tests/coverage generation because its scanner requires analysis coverage inputs; it is a dedicated analysis workflow, not a replacement for CI.
+SonarCloud analysis is performed by the **SonarCloud GitHub App**, which reports the `SonarCloud Code Analysis` check on pull requests and evaluates the configured Quality Gate. This is separate from GitHub Actions and does not require a repository workflow, `SONAR_TOKEN`, `SONAR_ORGANIZATION` or `SONAR_PROJECT_KEY` secrets/variables. Keep the SonarCloud project bound to this GitHub repository and manage project/Quality Gate settings in SonarCloud.
 
 ## Maven artifact publishing
 
@@ -58,4 +49,4 @@ The Publish Maven artifacts workflow validates POM/version configuration on PRs 
 
 ## Required PR checks
 
-Require CI, the PostgreSQL-backed API integration test job, and Code Security. Add Sonar only after it is enabled and reliable.
+Require the Continuous Integration, PostgreSQL-backed API integration (CT), and Code Security checks. The `SonarCloud Code Analysis` GitHub App check can also be required now that it is reporting a successful Quality Gate on PR #68; confirm it appears consistently on all target PRs before making it a mandatory ruleset check.
