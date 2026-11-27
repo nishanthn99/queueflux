@@ -137,7 +137,7 @@ mvn -B test
 cd web && npm install && npm run build
 ```
 
-GitHub Actions runs Maven verification with JaCoCo coverage, frontend tests with Vitest/V8 coverage, linting and production builds. Separate workflows run CodeQL (Java and TypeScript), Semgrep Community SAST, optional SonarQube Cloud analysis, and versioned Maven artifact publishing. See [quality and security](docs/QUALITY_AND_SECURITY.md) and [artifact publishing and free hosting](docs/ARTIFACTS_AND_FREE_HOSTING.md).
+GitHub Actions uses **Continuous Integration** for Maven verification/JaCoCo, API Docker non-root validation, frontend tests/lint/build, CLI tests, scenario-schema validation and build artifacts. **Continuous Testing** separately runs PostgreSQL-backed API integration checks. **Code Security** runs CodeQL and Semgrep. SonarCloud Quality Gate results are supplied by the SonarCloud GitHub App (`SonarCloud Code Analysis`), not a duplicate repository workflow. Release automation and Maven publishing remain separate. See [quality and security](docs/QUALITY_AND_SECURITY.md) and [artifact publishing and free hosting](docs/ARTIFACTS_AND_FREE_HOSTING.md).
 
 ## Publish Maven artifacts
 
