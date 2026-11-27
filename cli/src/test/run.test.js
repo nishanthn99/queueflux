@@ -7,7 +7,9 @@ const FAST = { apiUrl: 'http://localhost:8080', pollIntervalMs: 1 };
 
 function makeFetch(responses) {
   let call = 0;
-  return async (url, init) => {
+  const calls = [];
+  const fn = async (url, init) => {
+    calls.push(url);
     const resp = responses[call++];
     if (resp instanceof Error) throw resp;
     return {
@@ -17,6 +19,8 @@ function makeFetch(responses) {
       text: async () => resp.text ?? '',
     };
   };
+  fn.calls = calls;
+  return fn;
 }
 
 describe('submitRun()', () => {
@@ -30,24 +34,29 @@ describe('submitRun()', () => {
     assert.equal(result.snapshot, null);
   });
 
-  it('polls until COMPLETED and returns snapshot', async () => {
+  it('polls until COMPLETED and fetches metrics from the dedicated endpoint', async () => {
     const fetchMock = makeFetch([
       { ok: true, status: 202, json: { id: 'run-1', status: 'QUEUED' } },
       { ok: true, status: 200, json: { id: 'run-1', status: 'RUNNING' } },
-      { ok: true, status: 200, json: { id: 'run-1', status: 'COMPLETED', result: { completedJobs: 10 } } },
+      { ok: true, status: 200, json: { id: 'run-1', status: 'COMPLETED', result: { completedJobs: 1 } } },
+      { ok: true, status: 200, json: { completedJobs: 10, throughputPerSecond: 42.5 } },
     ]);
     const result = await submitRun(SCENARIO, { ...FAST, wait: true, timeoutSeconds: 10 }, fetchMock);
     assert.equal(result.status, 'COMPLETED');
-    assert.ok(result.snapshot.result);
+    // result comes from the /metrics endpoint, not the snapshot
+    assert.equal(result.result.completedJobs, 10);
+    assert.equal(result.result.throughputPerSecond, 42.5);
+    assert.ok(fetchMock.calls.some(u => u.endsWith('/api/v1/simulations/runs/run-1/metrics')));
   });
 
-  it('returns FAILED status when run fails', async () => {
+  it('does not fetch metrics for a FAILED run', async () => {
     const fetchMock = makeFetch([
       { ok: true, status: 202, json: { id: 'run-2', status: 'QUEUED' } },
       { ok: true, status: 200, json: { id: 'run-2', status: 'FAILED', errorMessage: 'bad input' } },
     ]);
     const result = await submitRun(SCENARIO, { ...FAST, wait: true, timeoutSeconds: 10 }, fetchMock);
     assert.equal(result.status, 'FAILED');
+    assert.ok(!fetchMock.calls.some(u => u.endsWith('/metrics')));
   });
 
   it('throws NetworkError when fetch rejects on submit', async () => {
