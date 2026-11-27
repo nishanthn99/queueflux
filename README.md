@@ -141,7 +141,7 @@ GitHub Actions runs Maven verification with JaCoCo coverage, frontend tests with
 
 ## Releases and versioning
 
-QueueFlux uses Conventional Commits and Release Please to automatically determine semantic version bumps and open a Release PR with the version and changelog updates. After that PR is reviewed and merged, the workflow creates the GitHub Release, builds/tests the project, and attaches API, Maven-module, and frontend artifacts. Releases below 1.0.0 are marked as pre-releases. See [release and versioning](docs/RELEASES.md).
+QueueFlux uses Conventional Commits and Release Please to automatically determine semantic version bumps and open a Release PR with the version and changelog updates. After that PR is reviewed and merged, the workflow creates the GitHub Release, builds the API, Maven-module, and frontend release assets (without rerunning CI-owned tests), and attaches them. Releases below 1.0.0 are marked as pre-releases. See [release and versioning](docs/RELEASES.md).
 
 ## Publish Maven artifacts
 
