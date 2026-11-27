@@ -23,7 +23,7 @@ The release workflow publishes the parent POM and Maven modules:
 
 ### GitHub Packages (recommended zero-subscription option)
 
-1. Create a GitHub Release from a tag such as `v0.1.0`. The workflow validates the version, updates the Maven reactor POMs for that release build, runs `mvn clean verify`, then publishes with `mvn deploy`.
+1. Create a GitHub Release from a tag such as `v0.1.0`. The workflow validates the version and updates the Maven reactor POMs for that release build, then publishes with `mvn deploy -DskipTests`. CI validates the code before the release is created.
 2. Alternatively, run **Actions → Publish Maven artifacts → Run workflow**, supply a version such as `0.1.0`, and choose `github`.
 3. The workflow uses the short-lived `GITHUB_TOKEN` with `packages: write`; no personal access token is required.
 4. The published package versions appear under the repository's **Packages** section.

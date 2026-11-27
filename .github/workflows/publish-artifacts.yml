@@ -1,6 +1,9 @@
 name: Publish Maven artifacts
 
 on:
+  pull_request:
+    branches: [main, deploy]
+    types: [opened, synchronize, reopened]
   release:
     types: [published]
   workflow_dispatch:
@@ -20,15 +23,51 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 concurrency:
-  group: publish-maven-${{ github.event.release.tag_name || inputs.version }}
+  group: publish-maven-${{ github.event.pull_request.number || github.event.release.tag_name || inputs.version || github.ref }}
   cancel-in-progress: false
 
 jobs:
+  validate-publishing-config:
+    name: Validate Maven publishing configuration
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Validate parent Maven version and POM syntax
+        run: |
+          mvn -B -ntp -N validate
+          python - <<'PY'
+          import re
+          import xml.etree.ElementTree as ET
+
+          root = ET.parse("pom.xml").getroot()
+          ns = {"m": "http://maven.apache.org/POM/4.0.0"}
+          version = root.findtext("m:version", namespaces=ns)
+          if not version:
+              version = root.findtext("m:parent/m:version", namespaces=ns)
+          if not version or not re.fullmatch(r"\d+\.\d+\.\d+(?:[-.][0-9A-Za-z.-]+)?", version):
+              raise SystemExit(f"Parent POM version is not semantic: {version!r}")
+          print(f"Validated release version: {version}")
+          PY
+      - name: Report publishing workflow validation
+        run: echo "Maven POM syntax and canonical release version validated. No publishing credentials or registry writes were used."
+
   publish:
-    name: Verify and publish Maven modules
+    name: Publish Maven modules
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      packages: write
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -88,10 +127,8 @@ jobs:
       - name: Verify and publish to GitHub Packages
         if: env.MAVEN_REGISTRY == 'github'
         run: |
-          mvn -B -ntp clean verify
           mvn -B -ntp deploy -DskipTests
       - name: Verify and publish to JFrog Artifactory
         if: env.MAVEN_REGISTRY == 'jfrog'
         run: |
-          mvn -B -ntp clean verify
           mvn -B -ntp deploy -DskipTests "-DaltDeploymentRepository=jfrog::${JFROG_MAVEN_REPO_URL}"

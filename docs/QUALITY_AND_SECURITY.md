@@ -1,80 +1,52 @@
 # Quality, coverage and security
 
-QueueFlux uses a layered code-quality pipeline.
+The workflows are designed to avoid repeating the same validation stage.
 
-## Continuous validation
+## Continuous Integration — pull-request quality gate
 
-The `CI` workflow runs on pull requests targeting `main` and pushes to `main`.
+The `Continuous Integration` workflow runs on PRs to `main` and `deploy`, and pushes to either protected branch.
 
 | Area | Tool | Command / output |
 |---|---|---|
 | Backend tests | Maven Surefire / JUnit | `mvn -B -ntp clean verify` |
-| Backend coverage | JaCoCo 0.8.16 | XML and HTML under each module's `target/site/jacoco/` |
-| Frontend tests | Vitest 5 | `npm test` |
-| Frontend coverage | Vitest V8 provider | `web/coverage/lcov.info` and HTML report |
+| Backend coverage | JaCoCo | XML/HTML under module `target/site/jacoco/` |
+| API image | Docker build | Build image and verify it runs as UID/GID 10001 |
+| Scenario schema | AJV CLI | Validate examples against schema v1 |
+| CLI tests | Node test runner | `npm ci` + `npm test` in `cli` |
+| Frontend tests | Vitest | `npm run test:coverage` |
+| Frontend coverage | Vitest V8 | `web/coverage/` |
 | Frontend quality | ESLint + TypeScript + Vite | `npm run lint`, `npm run build` |
 
-Coverage reports are uploaded as GitHub Actions artifacts for 14 days. Coverage is reported, but no arbitrary percentage threshold is enforced yet. The current test suite is a starting baseline: the Java suite is small, and most React UI/API behaviours still need dedicated tests. Expand tests before introducing a global minimum.
+CI uploads coverage, Maven test reports, backend JARs and frontend build output as artifacts for 14 days. Build Artifacts was removed because it duplicated Maven verify and frontend build; Docker validation and artifact uploads were consolidated into CI.
 
-Local commands:
+## Continuous Testing — system integration regression
 
-```bash
-mvn -B -ntp clean verify
-cd web
-npm install
-npm run test:coverage
-npm run lint
-npm run build
-```
+CT runs on PRs to `main`/`deploy`, daily at 02:23 UTC and manual dispatch (not on pushes). It builds the backend without running/compiling the CI-owned tests, starts the API against a disposable PostgreSQL service, then exercises the assembled application:
 
-## SonarQube Cloud
+- Actuator health and database connectivity
+- Synchronous simulation API and key result fields
+- Multi-replication comparison API and distinct seeds
+- Async run submission, completion, persisted result and idempotency-key reuse
+- Unknown run ID returns HTTP 404
 
-The optional SonarQube Cloud workflow uses SonarScanner for Maven, imports JaCoCo XML, and imports frontend LCOV coverage. The root Maven project enables `sonar.maven.scanAll` so non-JVM files under the root project can be included in the scan.
+CT is system/API integration testing; it does not duplicate unit tests, coverage, lint/build, CLI or schema validation. See [CONTINUOUS_TESTING.md](CONTINUOUS_TESTING.md).
 
-To enable:
+## Code Security
 
-1. Sign in to [SonarQube Cloud](https://sonarcloud.io/) with GitHub.
-2. Import the public `nishanthn99/queueflux` repository and create the QueueFlux project. Confirm that it qualifies for SonarQube Cloud's open-source offering.
-3. Generate a project analysis token.
-4. In GitHub **Settings → Secrets and variables → Actions**:
-   - Add repository secret `SONAR_TOKEN`.
-   - Add repository variable `SONAR_ENABLED` with value `true`.
-   - Add repository variable `SONAR_ORGANIZATION` with the organization key.
-   - Add repository variable `SONAR_PROJECT_KEY` with the exact project key shown by SonarQube Cloud.
-5. Run the **SonarQube Cloud** workflow manually or open a PR and confirm the analysis and quality gate in SonarQube Cloud.
+Code Security runs on PRs/pushes to main/deploy and weekly. It performs:
 
-The job is intentionally skipped until `SONAR_ENABLED=true` and the token/variables are configured. Fork PRs are skipped because GitHub does not expose repository secrets to them. The scan waits for the quality-gate result and fails if the configured gate fails.
+- CodeQL security-extended analysis for Java and JavaScript/TypeScript.
+- Semgrep Community scan using the auto ruleset.
+- SARIF upload to GitHub code scanning (when permitted).
 
-Never commit a token or place it in workflow YAML or repository variables.
+## SonarCloud Code Analysis — GitHub App
 
-## GitHub CodeQL
+SonarCloud analysis is performed by the **SonarCloud GitHub App**, which reports the `SonarCloud Code Analysis` check on pull requests and evaluates the configured Quality Gate. This is separate from GitHub Actions and does not require a repository workflow, `SONAR_TOKEN`, `SONAR_ORGANIZATION` or `SONAR_PROJECT_KEY` secrets/variables. Keep the SonarCloud project bound to this GitHub repository and manage project/Quality Gate settings in SonarCloud.
 
-The **Code Security** workflow analyzes:
+## Maven artifact publishing
 
-- `java-kotlin` using Java autobuild.
-- `javascript-typescript` using interpreted-language extraction.
-- The `security-extended` query suite.
+The Publish Maven artifacts workflow validates POM/version configuration on PRs without publishing. Actual publishing only runs on a published GitHub Release or manual dispatch, and deploys to GitHub Packages or optional JFrog. Tests are skipped at publish time because CI already validated them.
 
-It runs on same-repository PRs targeting `main`, pushes to `main`, weekly, and by manual dispatch. Findings are uploaded to **Security → Code scanning**. CodeQL upload on fork-originated PRs is skipped because the fork workflow token cannot write security events.
+## Required PR checks
 
-## Semgrep Community SAST
-
-The same security workflow runs Semgrep Community Edition with its public `auto` ruleset. The CLI is pinned to 1.183.0 and SARIF results are uploaded to GitHub code scanning when the workflow has permission. Fork PRs are still scanned, but their SARIF upload is skipped.
-
-Semgrep initially runs in reporting mode: a rule match does not fail the job. Review findings and false positives before deciding whether particular rules should block merging.
-
-## Recommended required checks for main
-
-After each workflow has completed at least once, configure the `main` ruleset to require:
-
-- Backend tests and JaCoCo coverage
-- Frontend tests, lint, build and coverage
-- CodeQL analysis for Java/Kotlin
-- CodeQL analysis for JavaScript/TypeScript
-- Semgrep Community SAST
-
-Add SonarQube Cloud analysis only after the Sonar project and repository secret/variables are configured and the workflow is enabled. Select exact check names from the PR Checks tab; do not require a skipped optional job.
-
-## Security notes
-
-The workflows use least-privilege permissions and pin third-party actions to full commit SHAs. SonarCloud is optional because it needs a user-created token. No credentials are stored in the repository.
+Require the Continuous Integration, PostgreSQL-backed API integration (CT), and Code Security checks. The `SonarCloud Code Analysis` GitHub App check can also be required now that it is reporting a successful Quality Gate on PR #68; confirm it appears consistently on all target PRs before making it a mandatory ruleset check.

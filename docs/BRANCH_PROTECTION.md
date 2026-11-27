@@ -1,63 +1,81 @@
 # Protecting the main branch
 
-QueueFlux changes should reach `main` through pull requests. The repository workflow files and this guide prepare the checks, but **a GitHub repository ruleset/branch protection rule must be enabled in repository settings** for GitHub to reject direct pushes. Configure that rule before relying on it as an enforcement boundary.
+QueueFlux changes should reach `main` through pull requests. GitHub repository rulesets/branch protection must be enabled in settings to enforce this.
 
 ## Recommended ruleset
 
-In GitHub, open **Settings → Rules → Rulesets → New ruleset → New branch ruleset**.
-
-Configure:
+In GitHub, open **Settings → Rules → Rulesets** and configure:
 
 | Setting | Value |
 |---|---|
 | Ruleset name | Protect main |
 | Enforcement status | Active |
-| Target branches | Include `main` |
+| Target branches | Include `main` only |
 | Require a pull request before merging | Enabled |
-| Required approvals | 0 for a single-maintainer repository; use 1 or more when another maintainer is available to review |
+| Required approvals | 1 (when another maintainer is available) |
+| Dismiss stale approvals | Enabled |
+| Require approval of most recent push | Enabled |
+| Require Code Owner review | Enabled |
 | Require status checks to pass | Enabled |
 | Require branches to be up to date | Enabled |
 | Require conversation resolution | Enabled |
 | Restrict deletions | Enabled |
 | Block force pushes | Enabled |
+| Bypass list | Empty |
 
-For required status checks, select both jobs from **Continuous Testing** after that workflow has completed at least once:
+## Required PR checks
 
-- `Backend tests`
-- `Frontend lint and production build`
+Require the following CI and Code Security jobs (select the exact job names GitHub reports):
 
-The existing `CI` workflow also runs on main pull requests. The two checks above are the dedicated continuous-testing gates and include the full Maven verification, frontend lint/build, and high-severity npm advisory check.
+- Backend tests and JaCoCo coverage
+- Validate example scenarios against JSON Schema
+- CLI tests
+- Frontend tests, lint, build and coverage
+- CodeQL analysis (java-kotlin, autobuild)
+- CodeQL analysis (javascript-typescript, none)
+- Semgrep Community SAST
+- PostgreSQL-backed API integration tests (CT)
 
-Keep the ruleset applicable to administrators. Leave the bypass list empty unless there is a deliberate, documented emergency process. Do not add a general administrator bypass just to make routine changes easier.
+The former **Build Artifacts** workflow was removed because it repeated Maven verification and frontend builds already performed by CI. Its Docker image build/non-root smoke test and artifact uploads now run within CI.
 
-## Why the approval count is configurable
+SonarCloud analysis is provided by the **SonarCloud GitHub App** (the `SonarCloud Code Analysis` check), not by a repository GitHub Actions workflow. Configure the app/project connection in SonarCloud and ensure the repository is bound to the project. No custom Actions workflow or repository Sonar token/organization/project variables are needed. Add `SonarCloud Code Analysis` as a required status check only if it is consistently reported for every PR.
 
-GitHub does not count the pull-request author's own approval as an independent review. For a repository maintained by one person, requiring one approval can make normal merges impossible. Keep required approvals at zero until a second trusted maintainer is available; the required CI checks, PR-only rule, up-to-date branch rule, and conversation resolution still provide useful safeguards.
+## Deploy branch ruleset
+
+Use a separate active ruleset targeting exactly `deploy`. **Only CODEOWNERS should approve and merge into `deploy`**, particularly promotions from `main`. Require PRs, Code Owner approval, stale-review dismissal, latest-push approval, resolved conversations, up-to-date branches, deletion protection and force-push blocking. Use the ruleset's Restrict updates / allowed actors option to limit who can update/merge to the CODEOWNERS users or team; do not include general contributors or bypass actors. Disable auto-merge for deploy. These are repository settings and cannot be changed by workflow commits.
+
+Require the same CI, Code Security and PostgreSQL-backed CT checks above. CT runs on PRs to main/deploy, its daily schedule, and manual dispatch; it is not triggered by branch pushes.
+
+
+
+### Current ruleset audit — 27 November 2026
+
+The active `deploy` ruleset still requires the legacy check contexts `CI`, `Continuous Testing`, and `Code Security`. Those labels do not match the current job-level checks produced by the consolidated workflows. Replace them in **Settings → Rules → Rulesets → Deploy branch protection** with the exact current contexts:
+
+- `Backend tests and JaCoCo coverage`
+- `Validate example scenarios against JSON Schema`
+- `CLI tests`
+- `Frontend tests, lint, build and coverage`
+- `PostgreSQL-backed API integration tests`
+- `CodeQL analysis (java-kotlin, autobuild)`
+- `CodeQL analysis (javascript-typescript, none)`
+- `Semgrep Community SAST`
+
+The current deploy ruleset also has no update-restriction rule, so Code Owner approval is required but a CODEOWNER-only merge restriction is **not yet enforced**. Add an update restriction/allowed-actors rule that allows only the CODEOWNERS users or team, keep the bypass list empty, and enable latest-push approval and conversation resolution.
+
+The active `main` ruleset currently has no required status-check contexts configured. Add the CI, CT and Code Security contexts above to the main ruleset as well. These repository-administration settings must be changed in GitHub Settings; workflow commits cannot change them.
 
 ## Pull-request workflow
 
-1. Update local `main` and create a short-lived feature branch.
-2. Commit the change to that branch; do not push directly to `main`.
-3. Open a PR targeting `main` and complete the PR template.
-4. Wait for both Continuous Testing checks to pass.
-5. Resolve review conversations and update the branch with the latest `main` when GitHub requests it.
-6. Merge the PR using the repository's allowed merge strategy.
+1. Create a short-lived feature branch from current `main`.
+2. Open a PR targeting `main`.
+3. Wait for all required CI, CT and Code Security checks to pass.
+4. Obtain independent approval, resolve review conversations and update the branch if required.
+5. Merge into `main`.
+6. A CODEOWNER handles the promotion PR from `main` into `deploy` and performs the final merge.
 
 ## Workflow security
 
-The continuous-testing workflow uses read-only repository permissions, disables persisted checkout credentials, and pins actions to full commit SHAs. Dependabot checks the GitHub Actions, npm, and Maven manifests weekly and proposes dependency update PRs.
+CI, Code Security and CT use read-only repository permissions where applicable, disable persisted checkout credentials, and pin third-party actions to full commit SHAs. Dependabot checks GitHub Actions, npm and Maven dependencies weekly.
 
-For details about workflow dependency pinning, see GitHub's [secure use reference](https://docs.github.com/en/actions/reference/security/secure-use).
-
-
-## Additional quality and security checks
-
-After the quality/security PR is merged and each workflow has run at least once, add the following exact job checks to the `main` ruleset:
-
-- Backend tests and JaCoCo coverage
-- Frontend tests, lint, build and coverage
-- CodeQL analysis for Java/Kotlin
-- CodeQL analysis for JavaScript/TypeScript
-- Semgrep Community SAST
-
-Add SonarQube Cloud analysis only after the project and repository secret/variables are configured and the workflow is enabled. See [QUALITY_AND_SECURITY.md](QUALITY_AND_SECURITY.md).
+See [Continuous Testing](CONTINUOUS_TESTING.md) and [Quality and Security](QUALITY_AND_SECURITY.md).
