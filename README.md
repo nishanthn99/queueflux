@@ -162,7 +162,7 @@ Requirements:
 - Maven 3.9+
 - Node.js 22+
 - npm 10+
-- PostgreSQL 17+
+- PostgreSQL 18+
 
 Configure the PostgreSQL connection using:
 
