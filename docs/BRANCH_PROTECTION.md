@@ -65,6 +65,12 @@ The current deploy ruleset also has no update-restriction rule, so Code Owner ap
 
 The active `main` ruleset currently has no required status-check contexts configured. Add the CI, CT and Code Security contexts above to the main ruleset as well. These repository-administration settings must be changed in GitHub Settings; workflow commits cannot change them.
 
+
+
+### Fork pull-request security boundary
+
+CodeQL and Semgrep also analyze fork-originated pull requests. Because GitHub withholds write-capable repository tokens from fork workflows, those runs retain SARIF as short-lived workflow artifacts for maintainer review instead of uploading to Code Scanning. Same-repository PRs and trusted pushes upload their results to GitHub Code Scanning. The scanning jobs do not use repository secrets for fork code.
+
 ## Pull-request workflow
 
 1. Create a short-lived feature branch from current `main`.
