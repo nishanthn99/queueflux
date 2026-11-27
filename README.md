@@ -375,15 +375,17 @@ See [docs/RELEASES.md](docs/RELEASES.md) and [docs/ARTIFACTS_AND_FREE_HOSTING.md
 
 QueueFlux can be deployed as a demonstration or hobby application.
 
-The repository contains deployment configuration for a Spring Boot API and a static React frontend. The documented free-tier architecture uses:
+The repository includes a Render Blueprint in `render.yaml`. It defines a Render-hosted Spring Boot API, a Render static frontend, and a Render PostgreSQL database. The Blueprint is a ready-to-configure deployment option; provider accounts, credentials, and environment values must still be supplied by the repository owner.
+
+The hosting guide also describes an **alternative split-provider arrangement** for a low-traffic demo:
 
 | Component | Example provider | Purpose |
 |---|---|---|
-| React + Vite | Cloudflare Pages | Static frontend hosting |
+| React + Vite frontend | Cloudflare Pages | Static frontend hosting |
 | Spring Boot API | Render | Application hosting |
-| PostgreSQL | Neon | Managed database |
+| PostgreSQL | Neon | Managed PostgreSQL database |
 
-Provider limits, free-tier eligibility, cold starts, storage characteristics, and configuration requirements can change over time. The deployment documentation therefore treats these providers as examples rather than application dependencies.
+The Cloudflare Pages + Render + Neon arrangement is an alternative example; it is not the set of resources provisioned by the included Render Blueprint. Provider limits, free-tier eligibility, cold starts, storage characteristics, and configuration requirements can change over time. Verify current provider terms and limits before deployment.
 
 See [docs/ARTIFACTS_AND_FREE_HOSTING.md](docs/ARTIFACTS_AND_FREE_HOSTING.md) for the deployment procedure.
 
@@ -391,7 +393,7 @@ See [docs/ARTIFACTS_AND_FREE_HOSTING.md](docs/ARTIFACTS_AND_FREE_HOSTING.md) for
 
 Hosting QueueFlux on Render does **not** change the QueueFlux source-code license.
 
-The QueueFlux source remains licensed under Apache License 2.0. Render's own service terms govern use of the Render platform and its services; they do not replace the license of this repository's source code. citeturn766400search5
+The QueueFlux source remains licensed under Apache License 2.0. Render's platform terms govern the hosted service; they do not replace the license of this repository's source code.
 
 Do not commit provider credentials, database passwords, API tokens, or other secrets to the repository.
 
@@ -401,7 +403,7 @@ Do not commit provider credentials, database passwords, API tokens, or other sec
 
 QueueFlux is distributed under the **Apache License 2.0 (Apache-2.0)**. The complete license text is in [LICENSE](LICENSE).
 
-Apache-2.0 is an OSI-approved permissive open-source license. It grants broad rights to use, reproduce, modify, distribute, and create derivative works, subject to the license's conditions, including preservation of applicable notices and provision of the license text. citeturn766400search0turn766400search3
+Apache-2.0 is a permissive open-source license. It grants broad rights to use, reproduce, modify, distribute, and create derivative works, subject to the conditions in the license, including preservation of applicable notices and provision of the license text.
 
 For this project, Apache-2.0 is intentionally preferred over a strong copyleft license because QueueFlux is intended to be reusable as a simulation library, API, CLI, and web application without requiring downstream projects to adopt the same license for their own independent code.
 
@@ -426,9 +428,9 @@ The currently inspected Node.js lockfiles declare licenses including:
 | BlueOak-1.0.0 | Yes |
 | 0BSD | Yes |
 
-The Java build also uses open-source components including Spring Boot and Flyway under Apache-2.0, PostgreSQL under the PostgreSQL License, AssertJ under Apache-2.0, and jqwik under EPL-2.0. citeturn993290search2turn993290search3turn993290search0turn993290search1turn993290search11
+The Java build also uses open-source components with their own declared licenses. Examples in the Maven dependency graph include Apache-2.0, the PostgreSQL License, and EPL-2.0 components. These declarations should be checked against the resolved dependency graph when preparing a release.
 
-These licenses are not all the same, and that is expected in an OSS dependency graph. Permissive licenses such as MIT, BSD, Apache-2.0, ISC, 0BSD, and Blue Oak allow broad reuse subject to their respective notice/attribution conditions. MPL-2.0 and EPL-2.0 have additional file/component-level obligations, so they must not be treated as if they were MIT or Apache-2.0. citeturn711178search0turn711178search3
+These licenses are not all the same, and that is expected in an OSS dependency graph. Permissive licenses such as MIT, BSD, Apache-2.0, ISC, 0BSD, and Blue Oak allow broad reuse subject to their respective notice and attribution conditions. MPL-2.0 and EPL-2.0 have additional obligations and must not be treated as if they were MIT or Apache-2.0.
 
 For that reason:
 
@@ -491,7 +493,7 @@ Pull requests are validated through the repository's CI and security workflows.
 
 ## Community
 
-The project community can use the [QueueFlux Discord](https://discord.gg/RGRM8g75) for discussion, questions, ideas, and coordination.
+The project community can use the [QueueFlux Discord](https://discord.gg/RGRM8g75T) for discussion, questions, ideas, and coordination.
 
 ## License
 
