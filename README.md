@@ -393,7 +393,7 @@ See [docs/ARTIFACTS_AND_FREE_HOSTING.md](docs/ARTIFACTS_AND_FREE_HOSTING.md) for
 
 Hosting QueueFlux on Render does **not** change the QueueFlux source-code license.
 
-The QueueFlux source remains licensed under Apache License 2.0. Render's platform terms govern the hosted service; they do not replace the license of this repository's source code.
+The QueueFlux source remains licensed under Apache License 2.0. Render's platform terms govern the hosted service; they do not replace the license of this repository's source code.
 
 Do not commit provider credentials, database passwords, API tokens, or other secrets to the repository.
 
@@ -403,7 +403,7 @@ Do not commit provider credentials, database passwords, API tokens, or other sec
 
 QueueFlux is distributed under the **Apache License 2.0 (Apache-2.0)**. The complete license text is in [LICENSE](LICENSE).
 
-Apache-2.0 is a permissive open-source license. It grants broad rights to use, reproduce, modify, distribute, and create derivative works, subject to the conditions in the license, including preservation of applicable notices and provision of the license text.
+Apache-2.0 is a permissive open-source license. It grants broad rights to use, reproduce, modify, distribute, and create derivative works, subject to the conditions in the license, including preservation of applicable notices and provision of the license text.
 
 For this project, Apache-2.0 is intentionally preferred over a strong copyleft license because QueueFlux is intended to be reusable as a simulation library, API, CLI, and web application without requiring downstream projects to adopt the same license for their own independent code.
 
@@ -428,9 +428,9 @@ The currently inspected Node.js lockfiles declare licenses including:
 | BlueOak-1.0.0 | Yes |
 | 0BSD | Yes |
 
-The Java build also uses open-source components with their own declared licenses. Examples in the Maven dependency graph include Apache-2.0, the PostgreSQL License, and EPL-2.0 components. These declarations should be checked against the resolved dependency graph when preparing a release.
+The Java build also uses open-source components with their own declared licenses. Examples in the Maven dependency graph include Apache-2.0, the PostgreSQL License, and EPL-2.0 components. These declarations should be checked against the resolved dependency graph when preparing a release.
 
-These licenses are not all the same, and that is expected in an OSS dependency graph. Permissive licenses such as MIT, BSD, Apache-2.0, ISC, 0BSD, and Blue Oak allow broad reuse subject to their respective notice and attribution conditions. MPL-2.0 and EPL-2.0 have additional obligations and must not be treated as if they were MIT or Apache-2.0.
+These licenses are not all the same, and that is expected in an OSS dependency graph. Permissive licenses such as MIT, BSD, Apache-2.0, ISC, 0BSD, and Blue Oak allow broad reuse subject to their respective notice and attribution conditions. MPL-2.0 and EPL-2.0 have additional obligations and must not be treated as if they were MIT or Apache-2.0.
 
 For that reason:
 
