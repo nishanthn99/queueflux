@@ -19,29 +19,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  configuration-status:
-    name: SonarQube configuration status
-    runs-on: ubuntu-latest
-    if: ${{ vars.SONAR_ORGANIZATION == '' || vars.SONAR_PROJECT_KEY == '' }}
-    steps:
-      - name: Explain missing configuration
-        run: |
-          {
-            echo "## SonarQube Cloud configuration is incomplete"
-            echo ""
-            echo "Set repository variables SONAR_ORGANIZATION and SONAR_PROJECT_KEY, and secret SONAR_TOKEN."
-            echo "Analysis runs automatically when those values are available; SONAR_ENABLED is not required."
-          } >> "$GITHUB_STEP_SUMMARY"
-
   sonar-analysis:
     name: SonarQube Cloud analysis
-    if: ${{ vars.SONAR_ORGANIZATION != '' && vars.SONAR_PROJECT_KEY != '' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION }}
-      SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}
+      SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION || secrets.SONAR_ORGANIZATION }}
+      SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY || secrets.SONAR_PROJECT_KEY }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -58,8 +44,8 @@ jobs:
       - name: Validate SonarQube configuration
         run: |
           test -n "$SONAR_TOKEN" || { echo "SONAR_TOKEN secret is missing"; exit 1; }
-          test -n "$SONAR_ORGANIZATION" || { echo "SONAR_ORGANIZATION repository variable is missing"; exit 1; }
-          test -n "$SONAR_PROJECT_KEY" || { echo "SONAR_PROJECT_KEY repository variable is missing"; exit 1; }
+          test -n "$SONAR_ORGANIZATION" || { echo "SONAR_ORGANIZATION must be configured as a repository variable or secret"; exit 1; }
+          test -n "$SONAR_PROJECT_KEY" || { echo "SONAR_PROJECT_KEY must be configured as a repository variable or secret"; exit 1; }
       - name: Generate frontend LCOV coverage
         working-directory: web
         run: |
