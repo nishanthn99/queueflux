@@ -46,6 +46,25 @@ Use a separate active ruleset targeting exactly `deploy`. **Only CODEOWNERS shou
 
 Require the same CI, Code Security and PostgreSQL-backed CT checks above. CT runs on PRs to main/deploy, its daily schedule, and manual dispatch; it is not triggered by branch pushes.
 
+
+
+### Current ruleset audit — 27 November 2026
+
+The active `deploy` ruleset still requires the legacy check contexts `CI`, `Continuous Testing`, and `Code Security`. Those labels do not match the current job-level checks produced by the consolidated workflows. Replace them in **Settings → Rules → Rulesets → Deploy branch protection** with the exact current contexts:
+
+- `Backend tests and JaCoCo coverage`
+- `Validate example scenarios against JSON Schema`
+- `CLI tests`
+- `Frontend tests, lint, build and coverage`
+- `PostgreSQL-backed API integration tests`
+- `CodeQL analysis (java-kotlin, autobuild)`
+- `CodeQL analysis (javascript-typescript, none)`
+- `Semgrep Community SAST`
+
+The current deploy ruleset also has no update-restriction rule, so Code Owner approval is required but a CODEOWNER-only merge restriction is **not yet enforced**. Add an update restriction/allowed-actors rule that allows only the CODEOWNERS users or team, keep the bypass list empty, and enable latest-push approval and conversation resolution.
+
+The active `main` ruleset currently has no required status-check contexts configured. Add the CI, CT and Code Security contexts above to the main ruleset as well. These repository-administration settings must be changed in GitHub Settings; workflow commits cannot change them.
+
 ## Pull-request workflow
 
 1. Create a short-lived feature branch from current `main`.
