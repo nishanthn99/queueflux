@@ -255,7 +255,7 @@ The UI intentionally treats JSON as the complete scenario contract. If an advanc
 
 ## 13. Local development
 
-Requirements: JDK 21, Maven 3.9+, Node.js 22+, npm 10+, PostgreSQL 17+ or Docker Compose.
+Requirements: JDK 21, Maven 3.9+, Node.js 22+, npm 10+, PostgreSQL 18+ or Docker Compose.
 
 ```bash
 mvn -B test
