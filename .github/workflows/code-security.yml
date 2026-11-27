@@ -2,7 +2,7 @@ name: Code Security
 
 on:
   push:
-    branches: [main]
+    branches: [main, deploy]
   pull_request:
     branches: [main, deploy]
     types: [opened, synchronize, reopened, ready_for_review]
