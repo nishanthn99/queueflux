@@ -92,7 +92,7 @@ export function serializeScenario(scenario: Scenario): string {
   return JSON.stringify(scenario, null, 2);
 }
 function filenameSlug(name: string): string {
-  return name.trim().toLowerCase().replace(/\\s+/g, '-').replace(/[^a-z0-9_-]/g, '').replace(/-+/g, '-') || 'queueflux';
+  return name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9_-]/g, '').replace(/-+/g, '-') || 'queueflux';
 }
 export function scenarioJsonFilename(scenario: Scenario): string {
   return filenameSlug(scenario.name) + '-' + scenario.seed + '.json';
@@ -121,5 +121,5 @@ export function buildResultsCsv(result: ResultsCsvInput): string {
     (result.workerUtilization * 100).toFixed(1), result.peakBacklog,
     result.completedJobs, result.rejectedJobs, result.deadLetteredJobs, result.retriedJobs,
   ];
-  return [headers.join(','), values.map(csvCell).join(',')].join('\\n');
+  return [headers.join(','), values.map(csvCell).join(',')].join('\n');
 }
