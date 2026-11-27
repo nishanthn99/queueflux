@@ -79,6 +79,13 @@ describe('validate()', () => {
     assert.equal(result.valid, true);
   });
 
+  it('accepts fractional EXPONENTIAL meanMicros under the canonical v1 schema', () => {
+    const good = clone(BASE);
+    good.workerPools[0].serviceTime = { distribution: 'EXPONENTIAL', meanMicros: 1000.5 };
+    const result = validate(good);
+    assert.equal(result.valid, true);
+  });
+
   it('rejects EXPONENTIAL serviceTime without meanMicros', () => {
     const bad = clone(BASE);
     bad.workerPools[0].serviceTime = { distribution: 'EXPONENTIAL', constantMicros: 1000 };
