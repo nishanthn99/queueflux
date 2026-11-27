@@ -47,7 +47,7 @@ jobs:
 
       # Package the application but skip CI-owned unit tests.
       - name: Package API without rerunning unit tests
-        run: mvn -B -ntp -DskipTests package
+        run: mvn -B -ntp -Dmaven.test.skip=true package
 
       - name: Start API against PostgreSQL
         env:
