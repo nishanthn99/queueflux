@@ -27,6 +27,8 @@ function smallScenario(name) {
     ...workload,
     endMicros: scenario.durationMicros,
   }));
+  // The template has an outage beyond this compact duration; remove it for valid test fixtures.
+  scenario.workerPools = scenario.workerPools.map((pool) => ({ ...pool, outages: [] }));
   return scenario;
 }
 
@@ -40,7 +42,7 @@ const sync = await request("/api/v1/simulations/run", {
   method: "POST",
   body: JSON.stringify(smallScenario("ct-sync-smoke")),
 });
-assert.equal(sync.response.status, 200);
+assert.equal(sync.response.status, 200, `sync request failed: ${JSON.stringify(sync.payload)}`);
 assert.equal(sync.payload.scenarioName, "ct-sync-smoke");
 assert.ok(Number.isFinite(sync.payload.processedEvents) && sync.payload.processedEvents > 0);
 assert.ok(Number.isFinite(sync.payload.completedJobs));
@@ -56,7 +58,7 @@ const comparison = await request("/api/v1/simulations/compare", {
     warmUpMicros: 0,
   }),
 });
-assert.equal(comparison.response.status, 200);
+assert.equal(comparison.response.status, 200, `comparison request failed: ${JSON.stringify(comparison.payload)}`);
 assert.equal(comparison.payload.replications, 2);
 assert.equal(comparison.payload.runs.length, 2);
 assert.notEqual(comparison.payload.runs[0].seed, comparison.payload.runs[1].seed);
@@ -70,7 +72,7 @@ const accepted = await request("/api/v1/simulations/runs", {
   headers: { "Idempotency-Key": idempotencyKey },
   body: JSON.stringify(asyncScenario),
 });
-assert.equal(accepted.response.status, 202);
+assert.equal(accepted.response.status, 202, `async submit failed: ${JSON.stringify(accepted.payload)}`);
 assert.ok(accepted.payload.id);
 assert.equal(accepted.payload.status, "QUEUED");
 
