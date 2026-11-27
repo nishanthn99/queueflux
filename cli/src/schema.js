@@ -82,9 +82,10 @@ export const SCENARIO_SCHEMA = {
       "type": "object",
       "required": ["distribution"],
       "properties": {
-        "distribution": { "type": "string", "enum": ["CONSTANT", "EXPONENTIAL"] },
+        "distribution": { "type": "string", "enum": ["CONSTANT", "EXPONENTIAL", "LOGNORMAL"] },
         "constantMicros": { "type": "integer", "minimum": 1 },
-        "meanMicros": { "type": "integer", "minimum": 1 }
+        "meanMicros": { "type": "number", "exclusiveMinimum": 0 },
+        "stdDevMicros": { "type": "number", "exclusiveMinimum": 0 }
       },
       "allOf": [
         {
@@ -100,6 +101,13 @@ export const SCENARIO_SCHEMA = {
             "required": ["distribution"]
           },
           "then": { "required": ["meanMicros"] }
+        },
+        {
+          "if": {
+            "properties": { "distribution": { "const": "LOGNORMAL" } },
+            "required": ["distribution"]
+          },
+          "then": { "required": ["meanMicros", "stdDevMicros"] }
         }
       ]
     },

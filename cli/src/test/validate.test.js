@@ -79,9 +79,44 @@ describe('validate()', () => {
     assert.equal(result.valid, true);
   });
 
+  it('accepts fractional EXPONENTIAL meanMicros under the canonical v1 schema', () => {
+    const good = clone(BASE);
+    good.workerPools[0].serviceTime = { distribution: 'EXPONENTIAL', meanMicros: 1000.5 };
+    const result = validate(good);
+    assert.equal(result.valid, true);
+  });
+
   it('rejects EXPONENTIAL serviceTime without meanMicros', () => {
     const bad = clone(BASE);
     bad.workerPools[0].serviceTime = { distribution: 'EXPONENTIAL', constantMicros: 1000 };
+    const result = validate(bad);
+    assert.equal(result.valid, false);
+  });
+
+  it('accepts LOGNORMAL serviceTime with meanMicros and stdDevMicros', () => {
+    const good = clone(BASE);
+    good.workerPools[0].serviceTime = { distribution: 'LOGNORMAL', meanMicros: 500, stdDevMicros: 100 };
+    const result = validate(good);
+    assert.equal(result.valid, true);
+  });
+
+  it('accepts LOGNORMAL serviceTime with float values', () => {
+    const good = clone(BASE);
+    good.workerPools[0].serviceTime = { distribution: 'LOGNORMAL', meanMicros: 1500.5, stdDevMicros: 300.25 };
+    const result = validate(good);
+    assert.equal(result.valid, true);
+  });
+
+  it('rejects LOGNORMAL serviceTime without meanMicros', () => {
+    const bad = clone(BASE);
+    bad.workerPools[0].serviceTime = { distribution: 'LOGNORMAL', stdDevMicros: 100 };
+    const result = validate(bad);
+    assert.equal(result.valid, false);
+  });
+
+  it('rejects LOGNORMAL serviceTime without stdDevMicros', () => {
+    const bad = clone(BASE);
+    bad.workerPools[0].serviceTime = { distribution: 'LOGNORMAL', meanMicros: 500 };
     const result = validate(bad);
     assert.equal(result.valid, false);
   });
