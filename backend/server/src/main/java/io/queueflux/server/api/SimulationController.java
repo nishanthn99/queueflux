@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import tools.jackson.databind.JsonNode;
 
 @RestController
 @RequestMapping("/api/v1/simulations")
@@ -59,6 +60,17 @@ public class SimulationController {
     @GetMapping("/runs/{id}")
     public SimulationRunSnapshot getRun(@PathVariable UUID id) {
         return runService.find(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "simulation run not found"));
+    }
+
+    /** Lightweight accessor for just the final metrics, avoiding the full snapshot payload. */
+    @GetMapping("/runs/{id}/metrics")
+    public JsonNode getRunMetrics(@PathVariable UUID id) {
+        SimulationRunSnapshot snapshot = runService.find(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "simulation run not found"));
+        if (snapshot.result() == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "metrics not available until run completes");
+        }
+        return snapshot.result();
     }
 
     @GetMapping(value = "/runs/{id}/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
