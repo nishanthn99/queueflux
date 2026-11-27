@@ -39,6 +39,12 @@ Code Security runs on PRs/pushes to main/deploy and weekly. It performs:
 - Semgrep Community scan using the auto ruleset.
 - SARIF upload to GitHub code scanning (when permitted).
 
+### Fork pull-request handling
+
+CodeQL and Semgrep run on fork-originated pull requests without repository secrets. On fork PRs, their SARIF outputs are uploaded as short-lived workflow artifacts for maintainer review; they are not uploaded to GitHub Code Scanning because the fork workflow token cannot perform that privileged write. Same-repository PRs and trusted branch pushes continue to publish Code Scanning results.
+
+All `github/codeql-action` components (`init`, `analyze`, and `upload-sarif`) are pinned to the same immutable v4.39.3 commit. Dependabot groups the CodeQL action family so these components are proposed together rather than creating incompatible partial upgrades.
+
 ## SonarCloud Code Analysis — GitHub App
 
 SonarCloud analysis is performed by the **SonarCloud GitHub App**, which reports the `SonarCloud Code Analysis` check on pull requests and evaluates the configured Quality Gate. This is separate from GitHub Actions and does not require a repository workflow, `SONAR_TOKEN`, `SONAR_ORGANIZATION` or `SONAR_PROJECT_KEY` secrets/variables. Keep the SonarCloud project bound to this GitHub repository and manage project/Quality Gate settings in SonarCloud.
