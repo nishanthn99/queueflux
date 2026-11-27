@@ -1,30 +1,39 @@
 name: Continuous Testing
 
+# CT is intentionally separate from PR CI: extended API regression tests only.
 on:
-  push:
-    branches:
-      - "**"
   pull_request:
-    branches:
-      - main
-      - deploy
+    branches: [main, deploy]
   schedule:
     - cron: "23 2 * * *"
   workflow_dispatch:
 
-# Read-only permissions are sufficient for validation jobs.
 permissions:
   contents: read
 
 concurrency:
-  group: continuous-testing-${{ github.event.pull_request.number || github.ref }}
+  group: continuous-testing-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  backend-tests:
-    name: Backend tests
+  api-integration:
+    name: PostgreSQL-backed API integration tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: queueflux
+          POSTGRES_USER: queueflux
+          POSTGRES_PASSWORD: queueflux-dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U queueflux -d queueflux"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -38,36 +47,42 @@ jobs:
           java-version: "21"
           cache: maven
 
-      - name: Verify all Maven modules
-        run: mvn -B -ntp verify
+      # Package the application but skip CI-owned unit tests.
+      - name: Package API without rerunning unit tests
+        run: mvn -B -ntp -Dmaven.test.skip=true package
 
-  frontend-quality:
-    name: Frontend lint and production build
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: web
-    steps:
-      - name: Check out source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          persist-credentials: false
+      - name: Start API against PostgreSQL
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/queueflux
+          DB_USERNAME: queueflux
+          DB_PASSWORD: queueflux-dev
+          PORT: 8080
+        run: |
+          java -jar backend/server/target/server-*.jar > /tmp/queueflux-api.log 2>&1 &
+          echo $! > /tmp/queueflux-api.pid
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://localhost:8080/actuator/health > /tmp/queueflux-health.json; then
+              cat /tmp/queueflux-health.json
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API did not become healthy. Startup logs:"
+          cat /tmp/queueflux-api.log
+          exit 1
 
-      - name: Set up Node.js 22
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
-        with:
-          node-version: "22"
+      - name: Run extended API integration checks
+        env:
+          API_BASE_URL: http://localhost:8080
+        run: node .github/scripts/continuous-testing-api.mjs
 
-      # A package-lock.json is not currently tracked, so use npm install.
-      - name: Install frontend dependencies
-        run: npm install --no-audit --no-fund
+      - name: Print API logs on failure
+        if: failure()
+        run: cat /tmp/queueflux-api.log
 
-      - name: Check dependency advisories
-        run: npm audit --audit-level=high
-
-      - name: Lint frontend
-        run: npm run lint
-
-      - name: Build frontend
-        run: npm run build
+      - name: Stop API
+        if: always()
+        run: |
+          if [ -f /tmp/queueflux-api.pid ]; then
+            kill "$(cat /tmp/queueflux-api.pid)" || true
+          fi
