@@ -57,7 +57,24 @@ Returns:
 
 Returns 404 Not Found when the run ID does not exist.
 
-## 4. Subscribe to run events
+## 4. Fetch run metrics
+
+GET /api/v1/simulations/runs/{id}/metrics
+
+Returns only the final metrics object (the `result` payload of a completed run), without the surrounding snapshot (scenario, timestamps, status metadata). Useful for CLI/UI callers that already know the run completed and only need the numbers:
+
+```bash
+curl http://localhost:8080/api/v1/simulations/runs/<uuid>/metrics
+```
+
+Response body is the SimulationResult metrics: acceptedJobs, completedJobs, rejectedJobs, deadLetteredJobs, throughputPerSecond, p95EndToEndLatencyMicros, p99EndToEndLatencyMicros, workerUtilization, peakBacklog, and related fields.
+
+- Returns 404 Not Found when the run ID does not exist.
+- Returns 409 Conflict when the run exists but has not completed yet (no metrics available).
+
+The QueueFlux CLI `run --wait` uses this endpoint to retrieve metrics once a run reaches COMPLETED.
+
+## 5. Subscribe to run events
 
 GET /api/v1/simulations/runs/{id}/events
 
@@ -78,7 +95,7 @@ curl -N http://localhost:8080/api/v1/simulations/runs/<uuid>/events
 
 A client should still read the status endpoint after an SSE disconnect. SSE connections are transient; the PostgreSQL run record is durable.
 
-## 5. Replicated stochastic comparison
+## 6. Replicated stochastic comparison
 
 POST /api/v1/simulations/compare
 
@@ -120,7 +137,7 @@ Request:
 
 replications must be 2–30; seedStride must be at least 1. Seeds are scenario.seed + i * seedStride. The response includes aggregate means/standard deviations and a compact summary per seed. Each internal run is limited to 250,000 generated jobs, 1,000,000 processed events and zero trace events.
 
-## 6. Health
+## 7. Health
 
 GET /actuator/health
 
