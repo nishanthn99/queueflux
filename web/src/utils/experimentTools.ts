@@ -12,7 +12,7 @@ function nextId(prefix: string, existing: string[]): string {
     const expectedPrefix = prefix + '-';
     if (!value.startsWith(expectedPrefix)) return max;
     const suffix = value.slice(expectedPrefix.length);
-    if (!/^\\d+$/.test(suffix)) return max;
+    if (!/^\d+$/.test(suffix)) return max;
     return Math.max(max, Number(suffix));
   }, 0);
   return prefix + '-' + (highest + 1);
