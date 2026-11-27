@@ -38,7 +38,7 @@ Require the following CI and Code Security jobs (select the exact job names GitH
 
 The former **Build Artifacts** workflow was removed because it repeated Maven verification and frontend builds already performed by CI. Its Docker image build/non-root smoke test and artifact uploads now run within CI.
 
-SonarQube Cloud analysis now runs automatically on supported PRs/pushes when the project configuration is present. The workflow accepts `SONAR_ORGANIZATION` and `SONAR_PROJECT_KEY` as repository variables **or secrets**, plus `SONAR_TOKEN` as a secret. No `SONAR_ENABLED` toggle is required.
+SonarCloud analysis is provided by the **SonarCloud GitHub App** (the `SonarCloud Code Analysis` check), not by a repository GitHub Actions workflow. Configure the app/project connection in SonarCloud and ensure the repository is bound to the project. No custom Actions workflow or repository Sonar token/organization/project variables are needed. Add `SonarCloud Code Analysis` as a required status check only if it is consistently reported for every PR.
 
 ## Deploy branch ruleset
 
