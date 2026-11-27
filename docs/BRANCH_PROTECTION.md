@@ -1,6 +1,6 @@
 # Protecting the main branch
 
-QueueFlux changes should reach `main` through pull requests. A GitHub repository ruleset/branch protection rule must be enabled in repository settings for GitHub to reject direct pushes.
+QueueFlux changes should reach `main` through pull requests. GitHub repository rulesets/branch protection must be enabled in settings to enforce this.
 
 ## Recommended ruleset
 
@@ -25,7 +25,7 @@ In GitHub, open **Settings → Rules → Rulesets** and configure:
 
 ## Required PR checks
 
-Require these **CI and Code Security** jobs (select the exact job names shown by GitHub):
+Require the following CI and Code Security jobs (select the exact job names GitHub reports):
 
 - Backend tests and JaCoCo coverage
 - Validate example scenarios against JSON Schema
@@ -34,25 +34,28 @@ Require these **CI and Code Security** jobs (select the exact job names shown by
 - CodeQL analysis (java-kotlin, autobuild)
 - CodeQL analysis (javascript-typescript, none)
 - Semgrep Community SAST
+- PostgreSQL-backed API integration tests (CT)
 
-Require the unique CT job **PostgreSQL-backed API integration tests** as well. CT runs this distinct system-level suite on PRs to main/deploy and on its daily schedule/manual dispatch. Do not require SonarCloud until its project and repository secret/variables are configured and analysis is enabled.
+The former **Build Artifacts** workflow was removed because it repeated Maven verification and frontend builds already performed by CI. Its Docker image build/non-root smoke test and artifact uploads now run within CI.
+
+SonarQube Cloud is optional and should only be required after it is enabled and reports a reliable status.
+
+## Deploy branch ruleset
+
+Use a separate active ruleset targeting exactly `deploy`. Require PRs, one independent approval, stale-review dismissal, latest-push approval, Code Owner approval, resolved conversations, up-to-date branches, deletion protection and force-push blocking.
+
+Require the same CI, Code Security and PostgreSQL-backed CT checks above. CT runs on PRs to main/deploy, its daily schedule, and manual dispatch; it is not triggered by branch pushes.
 
 ## Pull-request workflow
 
 1. Create a short-lived feature branch from current `main`.
-2. Commit to that branch and open a PR targeting `main`.
-3. Wait for required CI and Code Security checks to pass.
-4. Obtain an independent approval, resolve review conversations and update the branch if required.
+2. Open a PR targeting `main`.
+3. Wait for all required CI, CT and Code Security checks to pass.
+4. Obtain independent approval, resolve review conversations and update the branch if required.
 5. Merge using the repository's allowed merge strategy.
 
 ## Workflow security
 
 CI, Code Security and CT use read-only repository permissions where applicable, disable persisted checkout credentials, and pin third-party actions to full commit SHAs. Dependabot checks GitHub Actions, npm and Maven dependencies weekly.
 
-See [Continuous Testing](CONTINUOUS_TESTING.md) for the separate scheduled integration suite and [Quality and Security](QUALITY_AND_SECURITY.md) for details.
-
-## Deploy branch ruleset
-
-Use a separate active ruleset targeting the exact branch `deploy`. Keep PRs required, at least one independent approval, stale-review dismissal, latest-push approval, Code Owner approval, resolved conversations, up-to-date branches, deletion protection and force-push blocking.
-
-For required status checks, require the CI jobs and Code Security jobs listed above. **Do not require Continuous Testing jobs**: CT now runs only on its daily schedule or manual dispatch and cannot provide a PR status. The deploy ruleset must be adjusted accordingly before the CT redesign is promoted to `deploy`.
+See [Continuous Testing](CONTINUOUS_TESTING.md) and [Quality and Security](QUALITY_AND_SECURITY.md).
