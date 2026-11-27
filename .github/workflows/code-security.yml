@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, deploy]
   pull_request:
-    branches: [main, deploy, ci/continuous-testing-main-protection]
+    branches: [main, deploy]
     types: [opened, synchronize, reopened]
   schedule:
     - cron: "17 4 * * 1"
