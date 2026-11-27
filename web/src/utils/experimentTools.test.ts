@@ -114,7 +114,7 @@ describe('scenario JSON and result CSV exports', () => {
       peakBacklog: 10, completedJobs: 20, rejectedJobs: 2,
       deadLetteredJobs: 1, retriedJobs: 3,
     });
-    const [header, row] = csv.split('\\n');
+    const [header, row] = csv.split('\n');
     expect(header).toContain('throughput_jobs_s');
     expect(row).toContain('"Email ""priority"", batch"');
     expect(row).toContain('12.35');
