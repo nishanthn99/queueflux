@@ -30,6 +30,14 @@ The ruleset should enforce:
 
 **Important:** Code Owner review alone does not restrict who can click Merge. The ruleset must also have an update restriction/allowed-actors rule limiting the deploy branch to CODEOWNERS. Check that this restriction is present and active before treating the policy as enforced.
 
+### Observed settings that still need correction
+
+The active `Deploy branch protection` ruleset currently lists the legacy required contexts `CI`, `Continuous Testing`, and `Code Security`. These no longer match the consolidated job-level checks. Replace them with the eight exact checks listed above.
+
+The current ruleset also has no update-restriction rule. It requires Code Owner review, but that alone does not prevent a non-CODEOWNER from clicking Merge after an approval. Add the CODEOWNERS-only update restriction/allowed-actors rule in Settings and leave bypass actors empty. Also enable latest-push approval and conversation resolution.
+
+The active `main` ruleset currently has no required status-check contexts configured; configure the current CI, CT and Code Security checks there too. These changes must be applied in GitHub Settings and are not applied by this documentation PR.
+
 ## Required promotion checks
 
 Use the current job/check names reported by GitHub:
