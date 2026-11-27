@@ -52,7 +52,24 @@ export async function submitRun(scenario, { apiUrl, wait, timeoutSeconds, pollIn
     }
 
     if (TERMINAL_STATUSES.has(snap.status)) {
-      return { id: runId, status: snap.status, result: snap.result, snapshot: snap };
+      let result = snap.result;
+      // For a completed run, fetch the lighter metrics-only endpoint rather than
+      // re-reading the full snapshot payload.
+      if (snap.status === 'COMPLETED') {
+        const metricsUrl = `${apiUrl}/api/v1/simulations/runs/${runId}/metrics`;
+        try {
+          const m = await fetchImpl(metricsUrl);
+          if (!m.ok) {
+            const body = await m.text().catch(() => '');
+            throw new ApiError(m.status, body);
+          }
+          result = await m.json();
+        } catch (err) {
+          if (err instanceof ApiError) throw err;
+          throw new NetworkError(`Lost connection while fetching ${metricsUrl}: ${err.message}`);
+        }
+      }
+      return { id: runId, status: snap.status, result, snapshot: snap };
     }
   }
 
