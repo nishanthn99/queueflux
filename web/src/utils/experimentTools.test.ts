@@ -47,7 +47,7 @@ describe('scenario builder operations', () => {
   it('generates IDs without collisions after deletions', () => {
     const withTwo = addQueueToScenario(addQueueToScenario(scenario));
     const afterRemove = removeQueueFromScenario(withTwo, 0);
-    expect(addQueueToScenario(afterRemove).queues.map(q => q.id)).toEqual(['queue-2', 'queue-3']);
+    expect(addQueueToScenario(afterRemove).queues.map(q => q.id)).toEqual(['queue-2', 'queue-3', 'queue-4']);
   });
 
   it('removing a queue also removes its linked worker pools and workloads', () => {
