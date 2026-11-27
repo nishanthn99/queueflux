@@ -4,7 +4,7 @@
 
 - web: React production build served by Nginx on host port 3000.
 - api: Spring Boot API on host port 8080.
-- db: PostgreSQL 17 on host port 5432.
+- db: PostgreSQL 18 on host port 5432.
 - queueflux-postgres: named volume containing PostgreSQL data.
 
 Start all services:
