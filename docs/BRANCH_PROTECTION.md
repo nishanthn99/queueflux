@@ -50,3 +50,9 @@ Do not require Continuous Testing: CT is a scheduled/manual end-to-end suite and
 CI, Code Security and CT use read-only repository permissions where applicable, disable persisted checkout credentials, and pin third-party actions to full commit SHAs. Dependabot checks GitHub Actions, npm and Maven dependencies weekly.
 
 See [Continuous Testing](CONTINUOUS_TESTING.md) for the separate scheduled integration suite and [Quality and Security](QUALITY_AND_SECURITY.md) for details.
+
+## Deploy branch ruleset
+
+Use a separate active ruleset targeting the exact branch `deploy`. Keep PRs required, at least one independent approval, stale-review dismissal, latest-push approval, Code Owner approval, resolved conversations, up-to-date branches, deletion protection and force-push blocking.
+
+For required status checks, require the CI jobs and Code Security jobs listed above. **Do not require Continuous Testing jobs**: CT now runs only on its daily schedule or manual dispatch and cannot provide a PR status. The deploy ruleset must be adjusted accordingly before the CT redesign is promoted to `deploy`.
