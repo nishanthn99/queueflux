@@ -2,6 +2,8 @@ name: Continuous Testing
 
 # CT is intentionally separate from PR CI: extended API regression tests only.
 on:
+  pull_request:
+    branches: [main, deploy]
   schedule:
     - cron: "23 2 * * *"
   workflow_dispatch:
