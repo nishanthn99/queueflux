@@ -4,8 +4,8 @@ on:
   push:
     branches: [main, deploy]
   pull_request:
-    branches: [main, deploy, ci/continuous-testing-main-protection]
-    types: [opened, synchronize, reopened]
+    branches: [main, deploy]
+    types: [opened, synchronize, reopened, ready_for_review]
   schedule:
     - cron: "17 4 * * 1"
   workflow_dispatch:
@@ -22,7 +22,6 @@ concurrency:
 jobs:
   codeql:
     name: CodeQL analysis
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -45,15 +44,38 @@ jobs:
           distribution: temurin
           java-version: "21"
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
           queries: security-extended
       - name: Analyze with CodeQL
-        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        id: analyze
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           category: "/language:${{ matrix.language }}"
+          # Keep SARIF under GITHUB_WORKSPACE so it can be attached to fork PRs.
+          output: codeql-sarif
+          # Fork PRs have a read-only GITHUB_TOKEN. Run the scanner but do not
+          # attempt Code Scanning or database uploads from an untrusted fork.
+          upload: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'never' || 'always' }}
+          upload-database: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'false' || 'true' }}
+      - name: Explain fork PR CodeQL handling
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          {
+            echo "## CodeQL analysis"
+            echo
+            echo "CodeQL analysis ran for this fork pull request. GitHub does not grant fork workflows permission to upload Code Scanning results, so the SARIF output is attached as a workflow artifact instead."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload CodeQL SARIF for fork PR review
+        if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && hashFiles('codeql-sarif/**/*.sarif') != '' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: codeql-sarif-${{ matrix.language }}
+          path: ${{ steps.analyze.outputs.sarif-output }}/
+          if-no-files-found: error
+          retention-days: 7
 
   semgrep:
     name: Semgrep Community SAST
@@ -115,9 +137,17 @@ jobs:
           with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as output:
               output.write("\n".join(summary) + "\n")
           PY
+      - name: Upload Semgrep SARIF for fork PR review
+        if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && hashFiles('semgrep.sarif') != '' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: semgrep-sarif
+          path: semgrep.sarif
+          if-no-files-found: error
+          retention-days: 7
       - name: Upload Semgrep findings to GitHub code scanning
         if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && hashFiles('semgrep.sarif') != '' }}
-        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: semgrep.sarif
           category: semgrep-community
