@@ -25,7 +25,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: publish-maven-${{ github.event.release.tag_name || inputs.version }}
+  group: publish-maven-${{ github.event.pull_request.number || github.event.release.tag_name || inputs.version || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -38,6 +38,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
       - name: Validate parent Maven version and POM syntax
         run: |
           mvn -B -ntp -N validate
